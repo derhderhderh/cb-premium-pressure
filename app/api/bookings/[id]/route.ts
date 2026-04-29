@@ -75,7 +75,8 @@ export async function PATCH(
             assignedWorker ?? bookingData.assignedWorker,
           createdAt:
             bookingData.createdAt?.toDate?.() ?? new Date(),
-          updatedAt: new Date(),
+          updatedAt: Timestamp.fromDate(new Date()),        }
+
         }
 
         await sendStatusUpdateEmail(booking, status)
