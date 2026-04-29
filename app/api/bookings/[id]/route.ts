@@ -5,14 +5,13 @@ import {
   getDoc,
   updateDoc,
   serverTimestamp,
+  Timestamp,
   FieldValue,
 } from "firebase/firestore"
 import { Booking } from "@/lib/types"
 import { sendStatusUpdateEmail } from "@/lib/email"
 
-// Firestore-safe update type
-import { Timestamp, FieldValue } from "firebase/firestore"
-
+// ✅ Firestore-safe update type
 type BookingUpdate = {
   status?: string
   assignedWorker?: string | null
