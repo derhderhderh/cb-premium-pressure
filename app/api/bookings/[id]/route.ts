@@ -11,7 +11,6 @@ import {
 import { Booking } from "@/lib/types"
 import { sendStatusUpdateEmail } from "@/lib/email"
 
-// ✅ Firestore-safe update type
 type BookingUpdate = {
   status?: string
   assignedWorker?: string | null
@@ -51,7 +50,7 @@ export async function PATCH(
 
     await updateDoc(bookingRef, updateData)
 
-    // 📧 Send email if status changed
+    // ✅ EMAIL BLOCK (fixed syntax)
     if (status) {
       try {
         const bookingData = bookingSnap.data()
@@ -74,10 +73,10 @@ export async function PATCH(
           assignedWorker:
             assignedWorker ?? bookingData.assignedWorker,
           createdAt:
-            bookingData.createdAt?.toDate?.() ?? new Date(),
-          updatedAt: Timestamp.fromDate(new Date()),        }
-
-        }
+            bookingData.createdAt ??
+            Timestamp.fromDate(new Date()),
+          updatedAt: Timestamp.fromDate(new Date()),
+        } // ✅ <-- THIS WAS LIKELY BROKEN BEFORE
 
         await sendStatusUpdateEmail(booking, status)
       } catch (emailError) {
@@ -131,9 +130,11 @@ export async function GET(
       status: data.status,
       assignedWorker: data.assignedWorker,
       createdAt:
-        data.createdAt?.toDate?.() ?? new Date(),
+        data.createdAt ??
+        Timestamp.fromDate(new Date()),
       updatedAt:
-        data.updatedAt?.toDate?.() ?? new Date(),
+        data.updatedAt ??
+        Timestamp.fromDate(new Date()),
     }
 
     return NextResponse.json(booking)
