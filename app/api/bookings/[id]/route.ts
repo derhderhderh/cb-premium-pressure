@@ -10,17 +10,17 @@ import {
 import { Booking } from "@/lib/types"
 import { sendStatusUpdateEmail } from "@/lib/email"
 
-// Extend Booking for Firestore updates
+// Firestore-safe update type
 type BookingUpdate = Partial<Omit<Booking, "id">> & {
   updatedAt: FieldValue
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     const { status, assignedWorker } = body
 
@@ -34,7 +34,6 @@ export async function PATCH(
       )
     }
 
-    // ✅ Properly typed update object
     const updateData: BookingUpdate = {
       updatedAt: serverTimestamp(),
     }
@@ -94,10 +93,10 @@ export async function PATCH(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const bookingRef = doc(db, "bookings", id)
     const bookingSnap = await getDoc(bookingRef)
