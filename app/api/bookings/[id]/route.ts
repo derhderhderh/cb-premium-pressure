@@ -50,33 +50,32 @@ export async function PATCH(
 
     await updateDoc(bookingRef, updateData)
 
-    // ✅ EMAIL BLOCK (fixed syntax)
+    // 📧 Email notification (safe + fixed timestamps)
     if (status) {
       try {
-        const bookingData = bookingSnap.data()
+        const data = bookingSnap.data()
 
         const booking: Booking = {
           id,
-          customerName: bookingData.customerName,
-          email: bookingData.email,
-          phone: bookingData.phone,
-          address: bookingData.address,
-          serviceType: bookingData.serviceType,
-          squareFootage: bookingData.squareFootage,
-          estimatedPrice: bookingData.estimatedPrice,
-          preferredDate:
-            bookingData.preferredDate?.toDate?.() ??
-            new Date(bookingData.preferredDate),
-          preferredTime: bookingData.preferredTime,
-          notes: bookingData.notes,
+          customerName: data.customerName,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          serviceType: data.serviceType,
+          squareFootage: data.squareFootage,
+          estimatedPrice: data.estimatedPrice,
+          preferredDate: data.preferredDate?.toDate?.() ?? new Date(),
+          preferredTime: data.preferredTime,
+          notes: data.notes,
           status,
-          assignedWorker:
-            assignedWorker ?? bookingData.assignedWorker,
+          assignedWorker: assignedWorker ?? data.assignedWorker,
+
           createdAt:
-            bookingData.createdAt ??
-            Timestamp.fromDate(new Date()),
-          updatedAt: Timestamp.fromDate(new Date()),
-        } // ✅ <-- THIS WAS LIKELY BROKEN BEFORE
+            data.createdAt?.toDate?.() ??
+            new Date(),
+
+          updatedAt: new Date(),
+        }
 
         await sendStatusUpdateEmail(booking, status)
       } catch (emailError) {
@@ -87,6 +86,7 @@ export async function PATCH(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error updating booking:", error)
+
     return NextResponse.json(
       { error: "Failed to update booking" },
       { status: 500 }
@@ -122,24 +122,26 @@ export async function GET(
       serviceType: data.serviceType,
       squareFootage: data.squareFootage,
       estimatedPrice: data.estimatedPrice,
+
       preferredDate:
-        data.preferredDate?.toDate?.() ??
-        new Date(data.preferredDate),
+        data.preferredDate?.toDate?.() ?? new Date(),
+
       preferredTime: data.preferredTime,
       notes: data.notes,
       status: data.status,
       assignedWorker: data.assignedWorker,
+
       createdAt:
-        data.createdAt ??
-        Timestamp.fromDate(new Date()),
+        data.createdAt?.toDate?.() ?? new Date(),
+
       updatedAt:
-        data.updatedAt ??
-        Timestamp.fromDate(new Date()),
+        data.updatedAt?.toDate?.() ?? new Date(),
     }
 
     return NextResponse.json(booking)
   } catch (error) {
     console.error("Error fetching booking:", error)
+
     return NextResponse.json(
       { error: "Failed to fetch booking" },
       { status: 500 }
