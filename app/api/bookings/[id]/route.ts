@@ -1,19 +1,29 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/firebase"
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  serverTimestamp,
+  FieldValue,
+} from "firebase/firestore"
 import { Booking } from "@/lib/types"
 import { sendStatusUpdateEmail } from "@/lib/email"
 
+// Extend Booking for Firestore updates
+type BookingUpdate = Partial<Omit<Booking, "id">> & {
+  updatedAt: FieldValue
+}
+
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params
+    const { id } = params
     const body = await request.json()
     const { status, assignedWorker } = body
 
-    // Get the booking first
     const bookingRef = doc(db, "bookings", id)
     const bookingSnap = await getDoc(bookingRef)
 
@@ -24,7 +34,8 @@ export async function PATCH(
       )
     }
 
-    const updateData: Record<string, unknown> = {
+    // ✅ Properly typed update object
+    const updateData: BookingUpdate = {
       updatedAt: serverTimestamp(),
     }
 
@@ -38,10 +49,11 @@ export async function PATCH(
 
     await updateDoc(bookingRef, updateData)
 
-    // Send status update email if status changed
+    // 📧 Send email if status changed
     if (status) {
       try {
         const bookingData = bookingSnap.data()
+
         const booking: Booking = {
           id,
           customerName: bookingData.customerName,
@@ -51,18 +63,22 @@ export async function PATCH(
           serviceType: bookingData.serviceType,
           squareFootage: bookingData.squareFootage,
           estimatedPrice: bookingData.estimatedPrice,
-          preferredDate: bookingData.preferredDate?.toDate?.() || new Date(bookingData.preferredDate),
+          preferredDate:
+            bookingData.preferredDate?.toDate?.() ??
+            new Date(bookingData.preferredDate),
           preferredTime: bookingData.preferredTime,
           notes: bookingData.notes,
-          status: status,
-          assignedWorker: bookingData.assignedWorker,
-          createdAt: bookingData.createdAt?.toDate?.() || new Date(),
+          status,
+          assignedWorker:
+            assignedWorker ?? bookingData.assignedWorker,
+          createdAt:
+            bookingData.createdAt?.toDate?.() ?? new Date(),
           updatedAt: new Date(),
         }
+
         await sendStatusUpdateEmail(booking, status)
       } catch (emailError) {
-        console.error("Failed to send status update email:", emailError)
-        // Don't fail the update if email fails
+        console.error("Email failed:", emailError)
       }
     }
 
@@ -78,10 +94,11 @@ export async function PATCH(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params
+    const { id } = params
+
     const bookingRef = doc(db, "bookings", id)
     const bookingSnap = await getDoc(bookingRef)
 
@@ -93,6 +110,7 @@ export async function GET(
     }
 
     const data = bookingSnap.data()
+
     const booking: Booking = {
       id,
       customerName: data.customerName,
@@ -102,13 +120,17 @@ export async function GET(
       serviceType: data.serviceType,
       squareFootage: data.squareFootage,
       estimatedPrice: data.estimatedPrice,
-      preferredDate: data.preferredDate?.toDate?.() || new Date(data.preferredDate),
+      preferredDate:
+        data.preferredDate?.toDate?.() ??
+        new Date(data.preferredDate),
       preferredTime: data.preferredTime,
       notes: data.notes,
       status: data.status,
       assignedWorker: data.assignedWorker,
-      createdAt: data.createdAt?.toDate?.() || new Date(),
-      updatedAt: data.updatedAt?.toDate?.() || new Date(),
+      createdAt:
+        data.createdAt?.toDate?.() ?? new Date(),
+      updatedAt:
+        data.updatedAt?.toDate?.() ?? new Date(),
     }
 
     return NextResponse.json(booking)
