@@ -11,8 +11,12 @@ import { Booking } from "@/lib/types"
 import { sendStatusUpdateEmail } from "@/lib/email"
 
 // Firestore-safe update type
-type BookingUpdate = Partial<Omit<Booking, "id">> & {
-  updatedAt: FieldValue
+import { Timestamp, FieldValue } from "firebase/firestore"
+
+type BookingUpdate = {
+  status?: string
+  assignedWorker?: string | null
+  updatedAt?: Timestamp | FieldValue
 }
 
 export async function PATCH(
