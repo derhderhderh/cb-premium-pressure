@@ -105,8 +105,21 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     console.error("Error creating booking:", error)
+
+    const message = error instanceof Error ? error.message : "Unknown error"
+    const code =
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      typeof error.code === "string"
+        ? error.code
+        : undefined
+
     return NextResponse.json(
-      { error: "Failed to create booking" },
+      {
+        error: "Failed to create booking",
+        details: code ? `${code}: ${message}` : message,
+      },
       { status: 500 }
     )
   }
