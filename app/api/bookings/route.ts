@@ -4,6 +4,23 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore"
 import { Booking, ServiceType } from "@/lib/types"
 import { sendBookingConfirmation } from "@/lib/email"
 
+export const runtime = "nodejs"
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs)
+  })
+
+  return Promise.race([
+    promise,
+    timeout,
+  ]).finally(() => {
+    if (timeoutId) clearTimeout(timeoutId)
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -48,22 +65,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Add to Firestore
-    const docRef = await addDoc(collection(db, "bookings"), {
-      ...bookingData,
-      preferredDate: bookingData.preferredDate,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    })
+    const docRef = await withTimeout(
+      addDoc(collection(db, "bookings"), {
+        ...bookingData,
+        preferredDate: bookingData.preferredDate,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+      15000,
+      "Timed out while saving booking"
+    )
 
     // Send confirmation email via Resend
-    try {
-      await sendBookingConfirmation({
-        ...bookingData,
-        id: docRef.id,
-      })
-    } catch (emailError) {
-      console.error("Failed to send confirmation email:", emailError)
-      // Don't fail the booking if email fails
+    if (process.env.RESEND_API_KEY) {
+      try {
+        await withTimeout(
+          sendBookingConfirmation({
+            ...bookingData,
+            id: docRef.id,
+          }),
+          8000,
+          "Timed out while sending confirmation email"
+        )
+      } catch (emailError) {
+        console.error("Failed to send confirmation email:", emailError)
+        // Don't fail the booking if email fails
+      }
+    } else {
+      console.warn("Skipping confirmation email: RESEND_API_KEY is not configured")
     }
 
     return NextResponse.json(

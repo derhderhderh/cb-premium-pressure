@@ -80,10 +80,14 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
 
     setIsSubmitting(true)
 
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), 20000)
+
     try {
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           ...formData,
           serviceType: selectedService,
@@ -94,14 +98,22 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
       })
 
       if (!response.ok) {
-        throw new Error("Failed to submit booking")
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.error || "Failed to submit booking")
       }
 
       setIsSubmitted(true)
     } catch (error) {
       console.error("Booking error:", error)
-      setErrors({ submit: "Failed to submit booking. Please try again." })
+      const message =
+        error instanceof DOMException && error.name === "AbortError"
+          ? "Booking request timed out. Please check your connection and try again."
+          : error instanceof Error
+            ? error.message
+            : "Failed to submit booking. Please try again."
+      setErrors({ submit: message })
     } finally {
+      window.clearTimeout(timeoutId)
       setIsSubmitting(false)
     }
   }
