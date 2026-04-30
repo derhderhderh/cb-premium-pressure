@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input"
 import { Booking, User } from "@/lib/types"
 import { format } from "date-fns"
 import { MoreHorizontal, Search, UserPlus } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, toDate } from "@/lib/utils"
 
 interface BookingsTableProps {
   bookings: Booking[]
@@ -133,9 +133,7 @@ export function BookingsTable({
                       {booking.serviceType.replace("_", " ")}
                     </TableCell>
                     <TableCell>
-                      {booking.preferredDate instanceof Date
-                        ? format(booking.preferredDate, "MMM d, yyyy")
-                        : format(new Date(booking.preferredDate), "MMM d, yyyy")}
+                      {format(toDate(booking.preferredDate), "MMM d, yyyy")}
                     </TableCell>
                     <TableCell>${booking.estimatedPrice.toFixed(2)}</TableCell>
                     <TableCell>

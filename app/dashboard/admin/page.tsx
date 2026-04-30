@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Spinner } from "@/components/ui/spinner"
 import { Booking, User } from "@/lib/types"
 import { updateBookingStatus, assignWorkerToBooking } from "@/lib/db"
+import { toDate } from "@/lib/utils"
 
 export default function AdminDashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
@@ -79,8 +80,8 @@ export default function AdminDashboardPage() {
   // Recent bookings for quick view
   const recentBookings = [...bookings]
     .sort((a, b) => {
-      const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
-      const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
+      const dateA = toDate(a.createdAt)
+      const dateB = toDate(b.createdAt)
       return dateB.getTime() - dateA.getTime()
     })
     .slice(0, 10)

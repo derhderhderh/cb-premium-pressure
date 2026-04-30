@@ -1,15 +1,14 @@
 import { Resend } from "resend"
 import { Booking } from "./types"
 import { format } from "date-fns"
+import { toDate } from "./utils"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 const FROM_EMAIL = "CB Premium Pressure <noreply@cbpremiumpressure.org>"
 
 export async function sendBookingConfirmation(booking: Booking) {
-  const preferredDate = booking.preferredDate instanceof Date
-    ? booking.preferredDate
-    : new Date(booking.preferredDate)
+  const preferredDate = toDate(booking.preferredDate)
 
   const html = `
     <!DOCTYPE html>
@@ -128,9 +127,7 @@ export async function sendStatusUpdateEmail(booking: Booking, newStatus: string)
   const statusInfo = statusMessages[newStatus]
   if (!statusInfo) return
 
-  const preferredDate = booking.preferredDate instanceof Date
-    ? booking.preferredDate
-    : new Date(booking.preferredDate)
+  const preferredDate = toDate(booking.preferredDate)
 
   const html = `
     <!DOCTYPE html>

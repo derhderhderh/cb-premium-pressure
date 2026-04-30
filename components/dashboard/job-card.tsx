@@ -19,7 +19,7 @@ import {
   PlayCircle,
   FileText,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, toDate } from "@/lib/utils"
 
 interface JobCardProps {
   booking: Booking
@@ -122,9 +122,7 @@ export function JobCard({ booking, onStatusUpdate, isUpdating }: JobCardProps) {
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-4 w-4 shrink-0" />
             <span>
-              {booking.preferredDate instanceof Date
-                ? format(booking.preferredDate, "PPP")
-                : format(new Date(booking.preferredDate), "PPP")}
+              {format(toDate(booking.preferredDate), "PPP")}
             </span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
