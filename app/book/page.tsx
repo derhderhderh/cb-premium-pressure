@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -9,7 +9,7 @@ import { BookingForm } from "@/components/booking/booking-form"
 import { ServiceType } from "@/lib/types"
 import { calculateQuote } from "@/lib/pricing"
 
-export default function BookPage() {
+function BookPageContent() {
   const searchParams = useSearchParams()
   const serviceParam = searchParams.get("service") as ServiceType | null
 
@@ -71,5 +71,13 @@ export default function BookPage() {
       </main>
       <Footer />
     </div>
+  )
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={null}>
+      <BookPageContent />
+    </Suspense>
   )
 }
