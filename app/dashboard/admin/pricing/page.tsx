@@ -39,6 +39,7 @@ export default function AdminPricingPage() {
           const defaultPricingData = Object.entries(DEFAULT_PRICING).map(([key, value]) => ({
             id: key,
             serviceType: key as ServiceType,
+            description: serviceLabels[key as ServiceType],
             ...value,
             updatedAt: new Date(),
             updatedBy: "",
@@ -100,6 +101,7 @@ export default function AdminPricingPage() {
     const defaultPricingData = Object.entries(DEFAULT_PRICING).map(([key, value]) => ({
       id: key,
       serviceType: key as ServiceType,
+      description: serviceLabels[key as ServiceType],
       ...value,
       updatedAt: new Date(),
       updatedBy: "",
