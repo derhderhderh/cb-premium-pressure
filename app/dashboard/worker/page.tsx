@@ -7,7 +7,13 @@ import { JobCard } from "@/components/dashboard/job-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
-import { Empty } from "@/components/ui/empty"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { Booking } from "@/lib/types"
 import { ClipboardList, Clock, CheckCircle, AlertCircle } from "lucide-react"
 
@@ -130,11 +136,17 @@ export default function WorkerDashboardPage() {
 
         <TabsContent value="pending" className="space-y-4">
           {pendingBookings.length === 0 ? (
-            <Empty
-              icon={<ClipboardList className="h-10 w-10" />}
-              title="No pending jobs"
-              description="You don&apos;t have any pending job requests right now."
-            />
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia>
+                  <ClipboardList className="h-10 w-10" />
+                </EmptyMedia>
+                <EmptyTitle>No pending jobs</EmptyTitle>
+                <EmptyDescription>
+                  You don&apos;t have any pending job requests right now.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               {pendingBookings.map((booking) => (
@@ -150,11 +162,17 @@ export default function WorkerDashboardPage() {
 
         <TabsContent value="active" className="space-y-4">
           {activeBookings.length === 0 ? (
-            <Empty
-              icon={<Clock className="h-10 w-10" />}
-              title="No active jobs"
-              description="Accept a pending job to get started."
-            />
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia>
+                  <Clock className="h-10 w-10" />
+                </EmptyMedia>
+                <EmptyTitle>No active jobs</EmptyTitle>
+                <EmptyDescription>
+                  Accept a pending job to get started.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               {activeBookings.map((booking) => (
@@ -170,11 +188,17 @@ export default function WorkerDashboardPage() {
 
         <TabsContent value="completed" className="space-y-4">
           {completedBookings.length === 0 ? (
-            <Empty
-              icon={<CheckCircle className="h-10 w-10" />}
-              title="No completed jobs yet"
-              description="Jobs you complete will appear here."
-            />
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia>
+                  <CheckCircle className="h-10 w-10" />
+                </EmptyMedia>
+                <EmptyTitle>No completed jobs yet</EmptyTitle>
+                <EmptyDescription>
+                  Jobs you complete will appear here.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               {completedBookings.map((booking) => (
