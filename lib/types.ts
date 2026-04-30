@@ -1,5 +1,7 @@
 import { Timestamp } from "firebase/firestore";
 
+export type FirestoreDate = Timestamp | Date;
+
 export type ServiceType =
   | "driveway"
   | "house_exterior"
@@ -27,14 +29,14 @@ export interface Booking {
   address: string;
   serviceType: ServiceType;
   squareFootage: number;
-  preferredDate: Timestamp;
+  preferredDate: FirestoreDate;
   preferredTime: string;
   estimatedPrice: number;
   status: BookingStatus;
   assignedWorker: string | null;
   notes: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: FirestoreDate;
+  updatedAt: FirestoreDate;
 }
 
 export interface User {
@@ -42,7 +44,7 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
-  createdAt: Timestamp;
+  createdAt: FirestoreDate;
   active: boolean;
 }
 
@@ -53,7 +55,7 @@ export interface Pricing {
   pricePerSqFt: number;
   minPrice: number;
   description: string;
-  updatedAt: Timestamp;
+  updatedAt: FirestoreDate;
   updatedBy: string;
 }
 
