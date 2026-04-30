@@ -100,6 +100,104 @@ export async function sendBookingConfirmation(booking: Booking) {
   }
 }
 
+export async function sendNewBookingAdminEmail(
+  booking: Booking,
+  recipients: string[]
+) {
+  if (recipients.length === 0) return
+
+  const preferredDate = toDate(booking.preferredDate)
+  const dashboardUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    "https://www.cbpremiumpressure.org"
+  const normalizedDashboardUrl = dashboardUrl.startsWith("http")
+    ? dashboardUrl
+    : `https://${dashboardUrl}`
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Booking Request</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #1e40af; margin: 0;">CB Premium Pressure</h1>
+          <p style="color: #64748b; margin: 5px 0;">New booking request received</p>
+        </div>
+
+        <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
+          <h2 style="color: #1e293b; margin-top: 0;">Review a New Booking</h2>
+          <p>A customer submitted a new booking request. Review it in the admin dashboard and assign a worker.</p>
+          <p style="margin: 24px 0 0 0;">
+            <a href="${normalizedDashboardUrl}/dashboard/admin/bookings" style="display: inline-block; background: #1e40af; color: #ffffff; text-decoration: none; font-weight: 600; padding: 12px 18px; border-radius: 8px;">Open Dashboard</a>
+          </p>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin-bottom: 20px;">
+          <h3 style="color: #1e293b; margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Booking Details</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #64748b;">Customer:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.customerName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #64748b;">Email:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.email}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #64748b;">Phone:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.phone}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #64748b;">Service:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500; text-transform: capitalize;">${booking.serviceType.replace("_", " ")}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #64748b;">Preferred Date:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${format(preferredDate, "MMMM d, yyyy")}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #64748b;">Preferred Time:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.preferredTime || "Flexible"}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #64748b;">Address:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.address}</td>
+            </tr>
+            <tr style="border-top: 2px solid #e2e8f0;">
+              <td style="padding: 15px 0 8px 0; color: #1e293b; font-weight: 600;">Estimated Price:</td>
+              <td style="padding: 15px 0 8px 0; text-align: right; font-weight: 700; font-size: 20px; color: #1e40af;">$${booking.estimatedPrice.toFixed(2)}</td>
+            </tr>
+          </table>
+        </div>
+      </body>
+    </html>
+  `
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: recipients,
+      subject: "New Booking Request - CB Premium Pressure",
+      html,
+    })
+
+    if (error) {
+      console.error("Error sending admin booking notification:", error)
+      throw error
+    }
+
+    return data
+  } catch (error) {
+    console.error("Failed to send admin booking notification:", error)
+    throw error
+  }
+}
+
 export async function sendStatusUpdateEmail(booking: Booking, newStatus: string) {
   const statusMessages: Record<string, { subject: string; heading: string; message: string }> = {
     accepted: {
