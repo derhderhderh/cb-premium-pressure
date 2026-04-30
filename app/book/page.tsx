@@ -7,7 +7,7 @@ import { Footer } from "@/components/layout/footer"
 import { QuoteCalculator } from "@/components/booking/quote-calculator"
 import { BookingForm } from "@/components/booking/booking-form"
 import { ServiceType } from "@/lib/types"
-import { calculateQuote, DEFAULT_PRICING } from "@/lib/pricing"
+import { calculateQuote } from "@/lib/pricing"
 
 export default function BookPage() {
   const searchParams = useSearchParams()
@@ -21,7 +21,7 @@ export default function BookPage() {
 
   // Calculate initial price
   useEffect(() => {
-    const initialPrice = calculateQuote(quoteData.service, quoteData.sqft, DEFAULT_PRICING)
+    const initialPrice = calculateQuote(quoteData.service, quoteData.sqft)
     setQuoteData((prev) => ({ ...prev, price: initialPrice }))
   }, [])
 
