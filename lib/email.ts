@@ -3,9 +3,15 @@ import { Booking } from "./types"
 import { format } from "date-fns"
 import { toDate } from "./utils"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 const FROM_EMAIL = "CB Premium Pressure <noreply@cbpremiumpressure.org>"
+
+function getResend() {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is not configured")
+  }
+
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 export async function sendBookingConfirmation(booking: Booking) {
   const preferredDate = toDate(booking.preferredDate)
@@ -81,7 +87,7 @@ export async function sendBookingConfirmation(booking: Booking) {
   `
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: booking.email,
       subject: "Booking Confirmation - CB Premium Pressure",
@@ -131,7 +137,7 @@ export async function sendNewBookingAdminEmail(
 
         <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
           <h2 style="color: #1e293b; margin-top: 0;">Review a New Booking</h2>
-          <p>A customer submitted a new booking request. Review it in the admin dashboard and assign a worker.</p>
+          <p>A customer submitted a new booking request. Review it in the admin dashboard or claim it from My Jobs.</p>
           <p style="margin: 24px 0 0 0;">
             <a href="${normalizedDashboardUrl}/dashboard/admin/bookings" style="display: inline-block; background: #1e40af; color: #ffffff; text-decoration: none; font-weight: 600; padding: 12px 18px; border-radius: 8px;">Open Dashboard</a>
           </p>
@@ -179,7 +185,7 @@ export async function sendNewBookingAdminEmail(
   `
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: recipients,
       subject: "New Booking Request - CB Premium Pressure",
@@ -263,7 +269,7 @@ export async function sendStatusUpdateEmail(booking: Booking, newStatus: string)
   `
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: booking.email,
       subject: statusInfo.subject,

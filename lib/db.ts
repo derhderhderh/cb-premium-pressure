@@ -109,16 +109,19 @@ export async function assignWorkerToBooking(bookingId: string, workerId: string 
   });
 }
 
+export async function claimBooking(bookingId: string, userId: string) {
+  await updateDoc(doc(bookingsRef, bookingId), {
+    assignedWorker: userId,
+    updatedAt: Timestamp.now(),
+  });
+}
+
 export async function getWorkerBookings(workerId: string): Promise<Booking[]> {
-  const q = query(
-    bookingsRef,
-    where("assignedWorker", "==", workerId),
-    orderBy("preferredDate", "desc")
-  );
+  const q = query(bookingsRef, orderBy("preferredDate", "desc"));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(
-    (doc) => ({ id: doc.id, ...doc.data() }) as Booking
-  );
+  return snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }) as Booking)
+    .filter((booking) => !booking.assignedWorker || booking.assignedWorker === workerId);
 }
 
 // Users

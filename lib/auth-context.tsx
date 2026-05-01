@@ -8,9 +8,12 @@ import {
   type ReactNode,
 } from "react";
 import {
+  EmailAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  updatePassword,
   type User as FirebaseUser,
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -24,6 +27,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   isAdmin: boolean;
   isWorker: boolean;
 }
@@ -66,8 +70,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserData(null);
   };
 
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string
+  ) => {
+    if (!auth.currentUser || !auth.currentUser.email) {
+      throw new Error("You must be signed in to change your password.");
+    }
+
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      currentPassword
+    );
+
+    await reauthenticateWithCredential(auth.currentUser, credential);
+    await updatePassword(auth.currentUser, newPassword);
+  };
+
   const isAdmin = userData?.role === "admin";
-  const isWorker = userData?.role === "worker";
+  const isWorker = userData?.role === "worker" || userData?.role === "admin";
 
   return (
     <AuthContext.Provider
@@ -78,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signIn,
         signOut,
+        changePassword,
         isAdmin,
         isWorker,
       }}

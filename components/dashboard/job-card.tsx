@@ -12,6 +12,7 @@ import {
   MapPin,
   Mail,
   User,
+  Hand,
   Ruler,
   DollarSign,
   CheckCircle,
@@ -24,6 +25,8 @@ import { cn, toDate } from "@/lib/utils"
 interface JobCardProps {
   booking: Booking
   onStatusUpdate?: (bookingId: string, newStatus: Booking["status"]) => Promise<void>
+  onClaim?: (bookingId: string) => Promise<void>
+  currentUserId?: string
   isUpdating?: boolean
 }
 
@@ -35,9 +38,11 @@ const statusConfig = {
   completed: { label: "Completed", variant: "success" as const, className: "bg-success text-success-foreground" },
 }
 
-export function JobCard({ booking, onStatusUpdate, isUpdating }: JobCardProps) {
+export function JobCard({ booking, onStatusUpdate, onClaim, currentUserId, isUpdating }: JobCardProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const status = statusConfig[booking.status]
+  const isClaimedByCurrentUser = Boolean(currentUserId && booking.assignedWorker === currentUserId)
+  const isUnclaimed = !booking.assignedWorker
 
   const handleStatusUpdate = async (newStatus: Booking["status"]) => {
     if (!onStatusUpdate) return
@@ -49,7 +54,34 @@ export function JobCard({ booking, onStatusUpdate, isUpdating }: JobCardProps) {
     }
   }
 
+  const handleClaim = async () => {
+    if (!onClaim) return
+    setLoading("claim")
+    try {
+      await onClaim(booking.id)
+    } finally {
+      setLoading(null)
+    }
+  }
+
   const getActionButtons = () => {
+    if (booking.status === "pending" && isUnclaimed) {
+      return (
+        <Button
+          size="sm"
+          onClick={handleClaim}
+          disabled={loading !== null || isUpdating}
+        >
+          <Hand className="mr-1.5 h-4 w-4" />
+          {loading === "claim" ? "Claiming..." : "Claim Job"}
+        </Button>
+      )
+    }
+
+    if (!isClaimedByCurrentUser) {
+      return null
+    }
+
     switch (booking.status) {
       case "pending":
         return (

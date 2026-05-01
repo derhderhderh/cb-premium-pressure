@@ -123,7 +123,7 @@ export default function AdminWorkersPage() {
               <DialogHeader>
                 <DialogTitle>Add New Worker</DialogTitle>
                 <DialogDescription>
-                  Create a new worker account. They&apos;ll be able to view and manage assigned jobs.
+                  Create a new worker account. They&apos;ll be able to claim and manage jobs.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">

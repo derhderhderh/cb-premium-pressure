@@ -1,16 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getAllBookings, getAllUsers } from "@/lib/db"
+import { useAuth } from "@/lib/auth-context"
+import { claimBooking, getAllBookings, getAllUsers, updateBookingStatus } from "@/lib/db"
 import { StatsCards } from "@/components/dashboard/stats-cards"
 import { BookingsTable } from "@/components/dashboard/bookings-table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { Booking, User } from "@/lib/types"
-import { updateBookingStatus, assignWorkerToBooking } from "@/lib/db"
 import { toDate } from "@/lib/utils"
 
 export default function AdminDashboardPage() {
+  const { user } = useAuth()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [workers, setWorkers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,16 +51,18 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const handleAssignWorker = async (bookingId: string, workerId: string) => {
+  const handleClaimBooking = async (bookingId: string) => {
+    if (!user) return
+
     try {
-      await assignWorkerToBooking(bookingId, workerId)
+      await claimBooking(bookingId, user.uid)
       setBookings((prev) =>
         prev.map((b) =>
-          b.id === bookingId ? { ...b, assignedWorker: workerId, updatedAt: new Date() } : b
+          b.id === bookingId ? { ...b, assignedWorker: user.uid, updatedAt: new Date() } : b
         )
       )
     } catch (err) {
-      console.error("Error assigning worker:", err)
+      console.error("Error claiming booking:", err)
       throw err
     }
   }
@@ -72,7 +75,7 @@ export default function AdminDashboardPage() {
     totalRevenue: bookings
       .filter((b) => b.status === "completed")
       .reduce((sum, b) => sum + b.estimatedPrice, 0),
-    activeWorkers: workers.filter((w) => w.active && w.role === "worker").length,
+    activeWorkers: workers.filter((w) => w.active && ["admin", "worker"].includes(w.role)).length,
     bookingsTrend: 12,
     revenueTrend: 8,
   }
@@ -127,8 +130,9 @@ export default function AdminDashboardPage() {
           <BookingsTable
             bookings={recentBookings}
             workers={workers}
+            currentUserId={user?.uid}
             onStatusUpdate={handleStatusUpdate}
-            onAssignWorker={handleAssignWorker}
+            onClaimBooking={handleClaimBooking}
           />
         </CardContent>
       </Card>

@@ -19,24 +19,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Booking, User } from "@/lib/types"
 import { format } from "date-fns"
-import { MoreHorizontal, Search, UserPlus } from "lucide-react"
+import { Hand, MoreHorizontal, Search } from "lucide-react"
 import { cn, toDate } from "@/lib/utils"
 
 interface BookingsTableProps {
   bookings: Booking[]
   workers: User[]
+  currentUserId?: string
   onStatusUpdate: (bookingId: string, newStatus: Booking["status"]) => Promise<void>
-  onAssignWorker: (bookingId: string, workerId: string) => Promise<void>
+  onClaimBooking?: (bookingId: string) => Promise<void>
 }
 
 const statusConfig = {
@@ -50,8 +45,9 @@ const statusConfig = {
 export function BookingsTable({
   bookings,
   workers,
+  currentUserId,
   onStatusUpdate,
-  onAssignWorker,
+  onClaimBooking,
 }: BookingsTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -105,7 +101,7 @@ export function BookingsTable({
               <TableHead>Date</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Worker</TableHead>
+              <TableHead>Claimed By</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -142,38 +138,9 @@ export function BookingsTable({
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {booking.status !== "completed" && booking.status !== "declined" ? (
-                        <Select
-                          value={booking.assignedWorker || ""}
-                          onValueChange={(value) => onAssignWorker(booking.id, value)}
-                        >
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="Assign worker">
-                              {assignedWorker ? (
-                                assignedWorker.name
-                              ) : (
-                                <span className="flex items-center gap-1 text-muted-foreground">
-                                  <UserPlus className="h-3 w-3" />
-                                  Assign
-                                </span>
-                              )}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {workers
-                              .filter((w) => w.active && w.role === "worker")
-                              .map((worker) => (
-                                <SelectItem key={worker.id} value={worker.id}>
-                                  {worker.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          {assignedWorker?.name || "-"}
-                        </span>
-                      )}
+                      <span className="text-sm text-muted-foreground">
+                        {assignedWorker?.name || "Unclaimed"}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -188,26 +155,36 @@ export function BookingsTable({
                           <DropdownMenuSeparator />
                           {booking.status === "pending" && (
                             <>
-                              <DropdownMenuItem
-                                onClick={() => onStatusUpdate(booking.id, "accepted")}
-                              >
-                                Accept
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => onStatusUpdate(booking.id, "declined")}
-                              >
-                                Decline
-                              </DropdownMenuItem>
+                              {!booking.assignedWorker && onClaimBooking && (
+                                <DropdownMenuItem onClick={() => onClaimBooking(booking.id)}>
+                                  <Hand className="mr-2 h-4 w-4" />
+                                  Claim
+                                </DropdownMenuItem>
+                              )}
+                              {booking.assignedWorker === currentUserId && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() => onStatusUpdate(booking.id, "accepted")}
+                                  >
+                                    Accept
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => onStatusUpdate(booking.id, "declined")}
+                                  >
+                                    Decline
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </>
                           )}
-                          {booking.status === "accepted" && (
+                          {booking.status === "accepted" && booking.assignedWorker === currentUserId && (
                             <DropdownMenuItem
                               onClick={() => onStatusUpdate(booking.id, "in_progress")}
                             >
                               Start Job
                             </DropdownMenuItem>
                           )}
-                          {booking.status === "in_progress" && (
+                          {booking.status === "in_progress" && booking.assignedWorker === currentUserId && (
                             <DropdownMenuItem
                               onClick={() => onStatusUpdate(booking.id, "completed")}
                             >

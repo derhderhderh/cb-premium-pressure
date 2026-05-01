@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { getWorkerBookings, updateBookingStatus } from "@/lib/db"
+import { claimBooking, getWorkerBookings, updateBookingStatus } from "@/lib/db"
 import { JobCard } from "@/components/dashboard/job-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -52,10 +52,32 @@ export default function WorkerDashboardPage() {
     }
   }
 
+  const handleClaimBooking = async (bookingId: string) => {
+    if (!user) return
+
+    try {
+      await claimBooking(bookingId, user.uid)
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === bookingId ? { ...b, assignedWorker: user.uid, updatedAt: new Date() } : b
+        )
+      )
+    } catch (err) {
+      console.error("Error claiming booking:", err)
+      throw err
+    }
+  }
+
   // Filter bookings by status
-  const pendingBookings = bookings.filter((b) => b.status === "pending")
-  const activeBookings = bookings.filter((b) => ["accepted", "in_progress"].includes(b.status))
-  const completedBookings = bookings.filter((b) => ["completed", "declined"].includes(b.status))
+  const pendingBookings = bookings.filter(
+    (b) => b.status === "pending" && (!b.assignedWorker || b.assignedWorker === user?.uid)
+  )
+  const activeBookings = bookings.filter(
+    (b) => ["accepted", "in_progress"].includes(b.status) && b.assignedWorker === user?.uid
+  )
+  const completedBookings = bookings.filter(
+    (b) => ["completed", "declined"].includes(b.status) && b.assignedWorker === user?.uid
+  )
 
   if (loading) {
     return (
@@ -73,7 +95,7 @@ export default function WorkerDashboardPage() {
           Welcome back, {userProfile?.name?.split(" ")[0] || "Worker"}
         </h1>
         <p className="text-muted-foreground">
-          Here are your assigned jobs and pending requests.
+          Claim open requests, then manage your active jobs.
         </p>
       </div>
 
@@ -154,6 +176,8 @@ export default function WorkerDashboardPage() {
                   key={booking.id}
                   booking={booking}
                   onStatusUpdate={handleStatusUpdate}
+                  onClaim={handleClaimBooking}
+                  currentUserId={user?.uid}
                 />
               ))}
             </div>
@@ -180,6 +204,7 @@ export default function WorkerDashboardPage() {
                   key={booking.id}
                   booking={booking}
                   onStatusUpdate={handleStatusUpdate}
+                  currentUserId={user?.uid}
                 />
               ))}
             </div>

@@ -14,6 +14,7 @@ import {
   DollarSign,
   LogOut,
   ClipboardList,
+  KeyRound,
   Menu,
   X,
 } from "lucide-react"
@@ -21,14 +22,17 @@ import { useState } from "react"
 
 const adminNavItems = [
   { href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/worker", label: "My Jobs", icon: ClipboardList },
   { href: "/dashboard/admin/bookings", label: "Bookings", icon: Calendar },
   { href: "/dashboard/admin/workers", label: "Workers", icon: Users },
   { href: "/dashboard/admin/pricing", label: "Pricing", icon: DollarSign },
   { href: "/dashboard/admin/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard/account", label: "Account", icon: KeyRound },
 ]
 
 const workerNavItems = [
   { href: "/dashboard/worker", label: "My Jobs", icon: ClipboardList },
+  { href: "/dashboard/account", label: "Account", icon: KeyRound },
 ]
 
 export function DashboardSidebar() {
