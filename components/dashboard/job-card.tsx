@@ -20,7 +20,7 @@ import {
   PlayCircle,
   FileText,
 } from "lucide-react"
-import { cn, toDate } from "@/lib/utils"
+import { cn, formatBookingQuantity, toDate } from "@/lib/utils"
 
 interface JobCardProps {
   booking: Booking
@@ -163,7 +163,7 @@ export function JobCard({ booking, onStatusUpdate, onClaim, currentUserId, isUpd
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Ruler className="h-4 w-4 shrink-0" />
-            <span>{booking.squareFootage.toLocaleString()} sq ft</span>
+            <span>{formatBookingQuantity(booking.serviceType, booking.squareFootage)}</span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <DollarSign className="h-4 w-4 shrink-0" />

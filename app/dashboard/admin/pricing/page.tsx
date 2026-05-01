@@ -197,7 +197,9 @@ export default function AdminPricingPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`${p.serviceType}-sqft`}>Per Sq Ft</Label>
+                  <Label htmlFor={`${p.serviceType}-sqft`}>
+                    {p.serviceType === "trashcan" ? "Per Can" : "Per Sq Ft"}
+                  </Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                       $
@@ -236,7 +238,7 @@ export default function AdminPricingPage() {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Formula: Base (${p.basePrice}) + (Area × ${p.pricePerSqFt}/sq ft), minimum ${p.minPrice}
+                Formula: Base (${p.basePrice}) + ({p.serviceType === "trashcan" ? "Cans" : "Area"} × ${p.pricePerSqFt}/{p.serviceType === "trashcan" ? "can" : "sq ft"}), minimum ${p.minPrice}
               </p>
             </CardContent>
           </Card>

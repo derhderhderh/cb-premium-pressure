@@ -105,6 +105,6 @@ export const DEFAULT_PRICING: Record<
   patio: { basePrice: 50, pricePerSqFt: 0.10, minPrice: 65 },
   fence: { basePrice: 65, pricePerSqFt: 0.14, minPrice: 85 },
   sidewalk: { basePrice: 35, pricePerSqFt: 0.08, minPrice: 50 },
-  trashcan: { basePrice: 20, pricePerSqFt: 0, minPrice: 20 },
+  trashcan: { basePrice: 0, pricePerSqFt: 20, minPrice: 20 },
   commercial: { basePrice: 175, pricePerSqFt: 0.15, minPrice: 250 },
 };

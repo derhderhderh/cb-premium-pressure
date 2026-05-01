@@ -169,7 +169,9 @@ export default function ServicesPage() {
                         <p className="text-2xl font-bold text-foreground">{service.startingPrice}</p>
                       </div>
                       <div className="border-l border-border pl-4">
-                        <span className="text-sm text-muted-foreground">Per sq ft</span>
+                        <span className="text-sm text-muted-foreground">
+                          {service.id === "trashcan" ? "Rate" : "Per sq ft"}
+                        </span>
                         <p className="text-lg font-semibold text-foreground">{service.pricePerSqFt}</p>
                       </div>
                     </div>

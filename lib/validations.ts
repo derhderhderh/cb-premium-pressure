@@ -18,15 +18,48 @@ export const bookingFormSchema = z.object({
     "trashcan",
     "commercial",
   ]),
-  squareFootage: z
-    .number()
-    .min(50, "Minimum square footage is 50")
-    .max(50000, "Maximum square footage is 50,000"),
+  squareFootage: z.number(),
   preferredDate: z.date({
     required_error: "Please select a preferred date",
   }),
   preferredTime: z.string().min(1, "Please select a preferred time"),
   notes: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.serviceType === "trashcan") {
+    if (data.squareFootage < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["squareFootage"],
+        message: "Please enter at least 1 can",
+      });
+    }
+
+    if (data.squareFootage > 100) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["squareFootage"],
+        message: "Maximum number of cans is 100",
+      });
+    }
+
+    return;
+  }
+
+  if (data.squareFootage < 50) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["squareFootage"],
+      message: "Minimum square footage is 50",
+    });
+  }
+
+  if (data.squareFootage > 50000) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["squareFootage"],
+      message: "Maximum square footage is 50,000",
+    });
+  }
 });
 
 export const contactFormSchema = z.object({

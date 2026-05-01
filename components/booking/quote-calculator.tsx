@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Home, Car, Trees, Building2, Fence, Footprints, Trash2, Calculator } from "lucide-react"
 import { ServiceType } from "@/lib/types"
 import { calculateQuote } from "@/lib/pricing"
-import { cn } from "@/lib/utils"
+import { cn, getQuantityLabel, getQuantityUnit } from "@/lib/utils"
 
 const serviceOptions = [
   { value: "driveway" as ServiceType, label: "Driveway", icon: Car },
@@ -29,7 +29,12 @@ interface QuoteCalculatorProps {
 
 export function QuoteCalculator({ initialService, onQuoteCalculated }: QuoteCalculatorProps) {
   const [selectedService, setSelectedService] = useState<ServiceType>(initialService || "driveway")
-  const [squareFootage, setSquareFootage] = useState(500)
+  const [squareFootage, setSquareFootage] = useState(initialService === "trashcan" ? 1 : 500)
+  const isTrashcan = selectedService === "trashcan"
+  const minQuantity = isTrashcan ? 1 : 100
+  const maxQuantity = isTrashcan ? 12 : 5000
+  const inputMax = isTrashcan ? 100 : 10000
+  const step = isTrashcan ? 1 : 50
 
   const estimatedPrice = useMemo(() => {
     return calculateQuote(selectedService, squareFootage)
@@ -37,8 +42,10 @@ export function QuoteCalculator({ initialService, onQuoteCalculated }: QuoteCalc
 
   const handleServiceChange = (value: string) => {
     const service = value as ServiceType
+    const nextQuantity = service === "trashcan" ? 1 : 500
     setSelectedService(service)
-    onQuoteCalculated?.({ service, sqft: squareFootage, price: calculateQuote(service, squareFootage) })
+    setSquareFootage(nextQuantity)
+    onQuoteCalculated?.({ service, sqft: nextQuantity, price: calculateQuote(service, nextQuantity) })
   }
 
   const handleSquareFootageChange = (value: number[]) => {
@@ -48,7 +55,7 @@ export function QuoteCalculator({ initialService, onQuoteCalculated }: QuoteCalc
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Math.max(0, Math.min(10000, parseInt(e.target.value) || 0))
+    const value = Math.max(minQuantity, Math.min(inputMax, parseInt(e.target.value) || minQuantity))
     setSquareFootage(value)
     onQuoteCalculated?.({ service: selectedService, sqft: value, price: calculateQuote(selectedService, value) })
   }
@@ -106,33 +113,33 @@ export function QuoteCalculator({ initialService, onQuoteCalculated }: QuoteCalc
           </RadioGroup>
         </div>
 
-        {/* Square Footage */}
+        {/* Quantity */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label className="text-base font-semibold">Square Footage</Label>
+            <Label className="text-base font-semibold">{getQuantityLabel(selectedService)}</Label>
             <div className="flex items-center gap-2">
               <Input
                 type="number"
                 value={squareFootage}
                 onChange={handleInputChange}
                 className="w-24 text-right"
-                min={0}
-                max={10000}
+                min={minQuantity}
+                max={inputMax}
               />
-              <span className="text-sm text-muted-foreground">sq ft</span>
+              <span className="text-sm text-muted-foreground">{getQuantityUnit(selectedService)}</span>
             </div>
           </div>
           <Slider
             value={[squareFootage]}
             onValueChange={handleSquareFootageChange}
-            min={100}
-            max={5000}
-            step={50}
+            min={minQuantity}
+            max={maxQuantity}
+            step={step}
             className="py-4"
           />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>100 sq ft</span>
-            <span>5,000 sq ft</span>
+            <span>{minQuantity.toLocaleString()} {getQuantityUnit(selectedService)}</span>
+            <span>{maxQuantity.toLocaleString()} {getQuantityUnit(selectedService)}</span>
           </div>
         </div>
 

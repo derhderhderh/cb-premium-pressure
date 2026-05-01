@@ -15,7 +15,7 @@ function BookPageContent() {
 
   const [quoteData, setQuoteData] = useState({
     service: (serviceParam || "driveway") as ServiceType,
-    sqft: 500,
+    sqft: serviceParam === "trashcan" ? 1 : 500,
     price: 0,
   })
 

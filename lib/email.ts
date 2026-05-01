@@ -1,7 +1,7 @@
 import { Resend } from "resend"
 import { Booking } from "./types"
 import { format } from "date-fns"
-import { toDate } from "./utils"
+import { formatBookingQuantity, getQuantityLabel, toDate } from "./utils"
 
 const FROM_EMAIL = "CB Premium Pressure <noreply@cbpremiumpressure.org>"
 
@@ -53,8 +53,8 @@ export async function sendBookingConfirmation(booking: Booking) {
               <td style="padding: 8px 0; text-align: right; font-weight: 500; text-transform: capitalize;">${booking.serviceType.replace("_", " ")}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #64748b;">Area:</td>
-              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.squareFootage.toLocaleString()} sq ft</td>
+              <td style="padding: 8px 0; color: #64748b;">${getQuantityLabel(booking.serviceType)}:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${formatBookingQuantity(booking.serviceType, booking.squareFootage)}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #64748b;">Preferred Date:</td>
@@ -161,6 +161,10 @@ export async function sendNewBookingAdminEmail(
             <tr>
               <td style="padding: 8px 0; color: #64748b;">Service:</td>
               <td style="padding: 8px 0; text-align: right; font-weight: 500; text-transform: capitalize;">${booking.serviceType.replace("_", " ")}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #64748b;">${getQuantityLabel(booking.serviceType)}:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${formatBookingQuantity(booking.serviceType, booking.squareFootage)}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #64748b;">Preferred Date:</td>

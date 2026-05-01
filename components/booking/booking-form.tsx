@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { CalendarIcon, CheckCircle, Send, MessageCircle, Smartphone } from "lucide-react"
 import { format, addDays } from "date-fns"
-import { cn } from "@/lib/utils"
+import { cn, formatBookingQuantity, getQuantityLabel } from "@/lib/utils"
 import { ServiceType } from "@/lib/types"
 import { validateBookingForm } from "@/lib/validations"
 
@@ -152,8 +152,10 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Area:</dt>
-                <dd className="font-medium text-foreground">{squareFootage} sq ft</dd>
+                <dt className="text-muted-foreground">{getQuantityLabel(selectedService)}:</dt>
+                <dd className="font-medium text-foreground">
+                  {formatBookingQuantity(selectedService, squareFootage)}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Estimated Price:</dt>
@@ -326,8 +328,10 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Area:</dt>
-                <dd className="font-medium text-foreground">{squareFootage} sq ft</dd>
+                <dt className="text-muted-foreground">{getQuantityLabel(selectedService)}:</dt>
+                <dd className="font-medium text-foreground">
+                  {formatBookingQuantity(selectedService, squareFootage)}
+                </dd>
               </div>
               <div className="flex justify-between border-t border-border pt-2">
                 <dt className="font-semibold text-foreground">Estimated Total:</dt>
