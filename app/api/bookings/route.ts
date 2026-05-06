@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore/lite"
 import { Booking, ServiceType } from "@/lib/types"
 import { sendBookingConfirmation, sendNewBookingAdminEmail } from "@/lib/email"
+import { DEFAULT_WORKER_AVAILABILITY, normalizeAvailability } from "@/lib/availability"
 
 export const runtime = "nodejs"
 
@@ -76,6 +77,30 @@ async function getAdminNotificationEmails() {
   return Array.from(emails)
 }
 
+async function getAvailableBookingWeekdays() {
+  const workersQuery = query(
+    collection(db, "users"),
+    where("role", "==", "worker"),
+    where("active", "==", true)
+  )
+  const snapshot = await withTimeout(
+    getDocs(workersQuery),
+    5000,
+    "Timed out while loading worker availability"
+  )
+  const days = new Set<number>()
+
+  snapshot.docs.forEach((doc) => {
+    normalizeAvailability(doc.data().availability as number[] | undefined).forEach((day) =>
+      days.add(day)
+    )
+  })
+
+  return normalizeAvailability(
+    snapshot.empty ? DEFAULT_WORKER_AVAILABILITY : Array.from(days)
+  )
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -101,6 +126,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const requestedDate = preferredDate ? new Date(preferredDate) : null
+    if (!requestedDate || Number.isNaN(requestedDate.getTime())) {
+      return NextResponse.json(
+        { error: "Please choose a valid preferred date" },
+        { status: 400 }
+      )
+    }
+
+    const availableWeekdays = await getAvailableBookingWeekdays()
+    if (!availableWeekdays.includes(requestedDate.getDay())) {
+      return NextResponse.json(
+        { error: "That date is not available for booking. Please choose an available day." },
+        { status: 400 }
+      )
+    }
+
     // Create booking document
     const bookingData: Omit<Booking, "id"> = {
       customerName,
@@ -110,7 +151,7 @@ export async function POST(request: NextRequest) {
       serviceType: serviceType as ServiceType,
       squareFootage: Number(squareFootage),
       estimatedPrice: Number(estimatedPrice),
-      preferredDate: preferredDate ? new Date(preferredDate) : new Date(),
+      preferredDate: requestedDate,
       preferredTime: preferredTime || "",
       notes: notes || "",
       status: "pending",

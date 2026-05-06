@@ -1,4 +1,15 @@
 import {
+  deleteApp,
+  getApp,
+  getApps,
+  initializeApp,
+} from "firebase/app";
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  signOut,
+} from "firebase/auth";
+import {
   collection,
   doc,
   addDoc,
@@ -11,8 +22,10 @@ import {
   orderBy,
   Timestamp,
   type QueryConstraint,
+  setDoc,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, firebaseConfig } from "./firebase";
+import { normalizeAvailability } from "./availability";
 import type {
   Booking,
   User,
@@ -20,6 +33,7 @@ import type {
   BusinessSettings,
   ServiceType,
   BookingStatus,
+  UserRole,
 } from "./types";
 
 // Collection references
@@ -152,18 +166,44 @@ export async function getAllUsers(): Promise<User[]> {
 }
 
 export async function createUser(
-  user: Omit<User, "id" | "createdAt">
+  user: Omit<User, "id" | "createdAt"> & { password: string; role: UserRole }
 ): Promise<User> {
+  const secondaryAppName = "team-account-creation";
+  const secondaryApp = getApps().some((app) => app.name === secondaryAppName)
+    ? getApp(secondaryAppName)
+    : initializeApp(firebaseConfig, secondaryAppName);
+  const secondaryAuth = getAuth(secondaryApp);
+  const { password, ...profile } = user;
   const now = Timestamp.now();
-  const docRef = await addDoc(usersRef, {
-    ...user,
-    createdAt: now,
-  });
-  return { id: docRef.id, ...user, createdAt: now } as User;
+
+  try {
+    const credential = await createUserWithEmailAndPassword(
+      secondaryAuth,
+      user.email,
+      password
+    );
+    const profileWithDates = {
+      ...profile,
+      createdAt: now,
+    };
+
+    await setDoc(doc(usersRef, credential.user.uid), profileWithDates);
+
+    return { id: credential.user.uid, ...profileWithDates } as User;
+  } finally {
+    await signOut(secondaryAuth).catch(() => undefined);
+    await deleteApp(secondaryApp).catch(() => undefined);
+  }
 }
 
 export async function updateUserStatus(id: string, active: boolean) {
   await updateDoc(doc(usersRef, id), { active });
+}
+
+export async function updateUserAvailability(id: string, availability: number[]) {
+  await updateDoc(doc(usersRef, id), {
+    availability: normalizeAvailability(availability),
+  });
 }
 
 export async function updateUser(

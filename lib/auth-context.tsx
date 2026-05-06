@@ -18,7 +18,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
-import type { User, UserRole } from "./types";
+import type { User } from "./types";
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -39,17 +39,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const getUserProfile = async (firebaseUser: FirebaseUser) => {
+    const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+    if (!userDoc.exists()) return null;
+    return { id: userDoc.id, ...userDoc.data() } as User;
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
 
       if (firebaseUser) {
-        // Fetch user data from Firestore
-        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-        if (userDoc.exists()) {
-          setUserData({ id: userDoc.id, ...userDoc.data() } as User);
+        const profile = await getUserProfile(firebaseUser);
+        if (profile?.active) {
+          setUserData(profile);
         } else {
           setUserData(null);
+          await firebaseSignOut(auth);
         }
       } else {
         setUserData(null);
@@ -62,7 +68,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const profile = await getUserProfile(credential.user);
+
+    if (!profile) {
+      await firebaseSignOut(auth);
+      throw new Error("No team account profile was found for this login.");
+    }
+
+    if (!profile.active) {
+      await firebaseSignOut(auth);
+      throw new Error("This team account is inactive.");
+    }
+
+    setUserData(profile);
   };
 
   const signOut = async () => {

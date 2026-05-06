@@ -46,6 +46,7 @@ export interface User {
   role: UserRole;
   createdAt: FirestoreDate;
   active: boolean;
+  availability?: number[];
 }
 
 export interface Pricing {

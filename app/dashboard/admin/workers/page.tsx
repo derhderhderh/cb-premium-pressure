@@ -1,13 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getAllUsers, createUser, updateUserStatus } from "@/lib/db"
+import { useAuth } from "@/lib/auth-context"
+import { getAllUsers, createUser, updateUserAvailability, updateUserStatus } from "@/lib/db"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -26,21 +35,30 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Spinner } from "@/components/ui/spinner"
-import { User } from "@/lib/types"
+import type { User, UserRole } from "@/lib/types"
 import { UserPlus, Mail, Shield, User as UserIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  DEFAULT_WORKER_AVAILABILITY,
+  formatAvailability,
+  normalizeAvailability,
+  WEEKDAYS,
+} from "@/lib/availability"
 
 export default function AdminWorkersPage() {
+  const { user: currentUser } = useAuth()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [updatingAvailability, setUpdatingAvailability] = useState<string | null>(null)
 
-  const [newWorker, setNewWorker] = useState({
+  const [newTeamMember, setNewTeamMember] = useState({
     name: "",
     email: "",
     password: "",
+    role: "worker" as UserRole,
   })
 
   useEffect(() => {
@@ -59,22 +77,28 @@ export default function AdminWorkersPage() {
     fetchUsers()
   }, [])
 
-  const handleCreateWorker = async (e: React.FormEvent) => {
+  const handleCreateTeamMember = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setError(null)
 
     try {
       const newUser = await createUser({
-        ...newWorker,
-        role: "worker",
+        ...newTeamMember,
         active: true,
+        availability:
+          newTeamMember.role === "worker" ? DEFAULT_WORKER_AVAILABILITY : [],
       })
       setUsers((prev) => [...prev, newUser])
-      setNewWorker({ name: "", email: "", password: "" })
+      setNewTeamMember({ name: "", email: "", password: "", role: "worker" })
       setIsDialogOpen(false)
     } catch (err) {
       console.error("Error creating worker:", err)
-      setError("Failed to create worker")
+      const message =
+        err instanceof Error
+          ? err.message.replace("Firebase: ", "")
+          : "Failed to create team member"
+      setError(message)
     } finally {
       setIsSubmitting(false)
     }
@@ -88,6 +112,30 @@ export default function AdminWorkersPage() {
       )
     } catch (err) {
       console.error("Error updating user status:", err)
+    }
+  }
+
+  const handleToggleAvailability = async (worker: User, day: number) => {
+    const currentAvailability = normalizeAvailability(worker.availability)
+    const nextAvailability = currentAvailability.includes(day)
+      ? currentAvailability.filter((availableDay) => availableDay !== day)
+      : [...currentAvailability, day]
+
+    setUpdatingAvailability(worker.id)
+
+    try {
+      const normalized = normalizeAvailability(nextAvailability)
+      await updateUserAvailability(worker.id, normalized)
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === worker.id ? { ...u, availability: normalized } : u
+        )
+      )
+    } catch (err) {
+      console.error("Error updating worker availability:", err)
+      setError("Failed to update worker availability")
+    } finally {
+      setUpdatingAvailability(null)
     }
   }
 
@@ -115,24 +163,41 @@ export default function AdminWorkersPage() {
           <DialogTrigger asChild>
             <Button>
               <UserPlus className="mr-2 h-4 w-4" />
-              Add Worker
+              Add Team Member
             </Button>
           </DialogTrigger>
           <DialogContent>
-            <form onSubmit={handleCreateWorker}>
+            <form onSubmit={handleCreateTeamMember}>
               <DialogHeader>
-                <DialogTitle>Add New Worker</DialogTitle>
+                <DialogTitle>Add Team Member</DialogTitle>
                 <DialogDescription>
-                  Create a new worker account. They&apos;ll be able to claim and manage jobs.
+                  Create a worker or administrator account with a temporary password.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Select
+                    value={newTeamMember.role}
+                    onValueChange={(value: UserRole) =>
+                      setNewTeamMember((p) => ({ ...p, role: value }))
+                    }
+                  >
+                    <SelectTrigger id="role" className="w-full">
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="worker">Worker</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    value={newWorker.name}
-                    onChange={(e) => setNewWorker((p) => ({ ...p, name: e.target.value }))}
+                    value={newTeamMember.name}
+                    onChange={(e) => setNewTeamMember((p) => ({ ...p, name: e.target.value }))}
                     placeholder="John Smith"
                     required
                   />
@@ -142,8 +207,8 @@ export default function AdminWorkersPage() {
                   <Input
                     id="email"
                     type="email"
-                    value={newWorker.email}
-                    onChange={(e) => setNewWorker((p) => ({ ...p, email: e.target.value }))}
+                    value={newTeamMember.email}
+                    onChange={(e) => setNewTeamMember((p) => ({ ...p, email: e.target.value }))}
                     placeholder="john@example.com"
                     required
                   />
@@ -154,8 +219,8 @@ export default function AdminWorkersPage() {
                   <Input
                     id="password"
                     type="password"
-                    value={newWorker.password}
-                    onChange={(e) => setNewWorker((p) => ({ ...p, password: e.target.value }))}
+                    value={newTeamMember.password}
+                    onChange={(e) => setNewTeamMember((p) => ({ ...p, password: e.target.value }))}
                     placeholder="Minimum 6 characters"
                     minLength={6}
                     required
@@ -167,7 +232,7 @@ export default function AdminWorkersPage() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create Worker"}
+                  {isSubmitting ? "Creating..." : "Create Account"}
                 </Button>
               </DialogFooter>
             </form>
@@ -200,6 +265,7 @@ export default function AdminWorkersPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Contact</TableHead>
+                <TableHead>Availability</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Active</TableHead>
               </TableRow>
@@ -207,7 +273,7 @@ export default function AdminWorkersPage() {
             <TableBody>
               {workers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     No workers added yet.
                   </TableCell>
                 </TableRow>
@@ -219,6 +285,28 @@ export default function AdminWorkersPage() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Mail className="h-3 w-3" />
                         {worker.email}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {WEEKDAYS.map((day) => (
+                            <label
+                              key={day.value}
+                              className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                            >
+                              <Checkbox
+                                checked={normalizeAvailability(worker.availability).includes(day.value)}
+                                disabled={updatingAvailability === worker.id}
+                                onCheckedChange={() => handleToggleAvailability(worker, day.value)}
+                              />
+                              {day.shortLabel}
+                            </label>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {formatAvailability(worker.availability)}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -254,7 +342,7 @@ export default function AdminWorkersPage() {
             Administrators
           </CardTitle>
           <CardDescription>
-            {admins.length} administrators
+            {admins.length} administrators ({admins.filter((a) => a.active).length} active)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -264,12 +352,13 @@ export default function AdminWorkersPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Active</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {admins.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     No administrators found.
                   </TableCell>
                 </TableRow>
@@ -284,7 +373,22 @@ export default function AdminWorkersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className="bg-primary text-primary-foreground">Admin</Badge>
+                      <Badge
+                        className={cn(
+                          admin.active
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground"
+                        )}
+                      >
+                        {admin.active ? "Admin" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Switch
+                        checked={admin.active}
+                        disabled={admin.id === currentUser?.uid}
+                        onCheckedChange={() => handleToggleActive(admin.id, admin.active)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))

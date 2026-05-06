@@ -32,6 +32,12 @@ export default function DashboardLayout({
     }
   }, [userProfile, loading, pathname, router])
 
+  useEffect(() => {
+    if (!loading && userProfile?.role === "worker" && pathname.startsWith("/dashboard/admin")) {
+      router.push("/dashboard/worker")
+    }
+  }, [userProfile, loading, pathname, router])
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -43,7 +49,7 @@ export default function DashboardLayout({
     )
   }
 
-  if (!user) {
+  if (!user || !userProfile) {
     return null
   }
 

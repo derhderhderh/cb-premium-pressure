@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,10 +12,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { CalendarIcon, CheckCircle, Send, MessageCircle, Smartphone } from "lucide-react"
-import { format, addDays } from "date-fns"
+import { format, addDays, startOfDay } from "date-fns"
 import { cn, formatBookingQuantity, getQuantityLabel } from "@/lib/utils"
 import { ServiceType } from "@/lib/types"
 import { validateBookingForm } from "@/lib/validations"
+import { DEFAULT_WORKER_AVAILABILITY } from "@/lib/availability"
 
 interface BookingFormProps {
   selectedService: ServiceType
@@ -37,6 +38,9 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [date, setDate] = useState<Date>()
+  const [availableWeekdays, setAvailableWeekdays] = useState<number[]>(DEFAULT_WORKER_AVAILABILITY)
+  const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true)
+  const [availabilityLoadFailed, setAvailabilityLoadFailed] = useState(false)
 
   const [formData, setFormData] = useState({
     customerName: "",
@@ -46,6 +50,42 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
     preferredTime: "",
     notes: "",
   })
+
+  useEffect(() => {
+    async function fetchAvailability() {
+      try {
+        const response = await fetch("/api/availability")
+        if (!response.ok) {
+          throw new Error("Failed to load available booking days.")
+        }
+
+        const data = await response.json()
+        if (Array.isArray(data.availableWeekdays)) {
+          setAvailableWeekdays(data.availableWeekdays)
+        }
+        setAvailabilityLoadFailed(false)
+      } catch (error) {
+        console.error("Availability error:", error)
+        setAvailabilityLoadFailed(true)
+        setErrors((prev) => ({
+          ...prev,
+          preferredDate: "Available booking days could not be loaded. Please try again.",
+        }))
+      } finally {
+        setIsAvailabilityLoading(false)
+      }
+    }
+
+    fetchAvailability()
+  }, [])
+
+  const isDateAvailable = (bookingDate: Date) => {
+    return (
+      !availabilityLoadFailed &&
+      bookingDate >= startOfDay(addDays(new Date(), 1)) &&
+      availableWeekdays.includes(bookingDate.getDay())
+    )
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -75,6 +115,13 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
 
     if (!validation.success) {
       setErrors(validation.errors)
+      return
+    }
+
+    if (!date || !isDateAvailable(date)) {
+      setErrors({
+        preferredDate: "Please choose an available booking date.",
+      })
       return
     }
 
@@ -273,14 +320,24 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
                     <Calendar
                       mode="single"
                       selected={date}
-                      onSelect={setDate}
-                      disabled={(date) => date < addDays(new Date(), 1)}
+                      onSelect={(selectedDate) => {
+                        setDate(selectedDate)
+                        setErrors((prev) => ({ ...prev, preferredDate: "" }))
+                      }}
+                      disabled={(date) =>
+                        isAvailabilityLoading || !isDateAvailable(date)
+                      }
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
                 {errors.preferredDate && (
                   <p className="text-sm text-destructive">{errors.preferredDate}</p>
+                )}
+                {!errors.preferredDate && (
+                  <p className="text-xs text-muted-foreground">
+                    Only days with worker availability can be selected.
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
@@ -346,7 +403,12 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
             </Alert>
           )}
 
-          <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={isSubmitting || isAvailabilityLoading || availabilityLoadFailed}
+          >
             {isSubmitting ? (
               "Submitting..."
             ) : (
