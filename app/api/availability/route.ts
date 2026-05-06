@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server"
 import { initializeApp, getApps, getApp } from "firebase/app"
 import {
-  collection,
-  getDocs,
+  doc,
+  getDoc,
   getFirestore,
-  query,
-  where,
 } from "firebase/firestore/lite"
-import { DEFAULT_WORKER_AVAILABILITY, normalizeAvailability } from "@/lib/availability"
+import { DEFAULT_BOOKING_AVAILABILITY, normalizeAvailability } from "@/lib/availability"
 
 export const runtime = "nodejs"
 
@@ -25,23 +23,14 @@ const db = getFirestore(app)
 
 export async function GET() {
   try {
-    const workersQuery = query(
-      collection(db, "users"),
-      where("role", "==", "worker"),
-      where("active", "==", true)
-    )
-    const snapshot = await getDocs(workersQuery)
-    const days = new Set<number>()
-
-    snapshot.docs.forEach((doc) => {
-      normalizeAvailability(doc.data().availability as number[] | undefined).forEach((day) =>
-        days.add(day)
-      )
-    })
+    const settingsDoc = await getDoc(doc(db, "settings", "global"))
+    const configuredAvailability = settingsDoc.exists()
+      ? (settingsDoc.data().bookingAvailability as number[] | undefined)
+      : undefined
 
     return NextResponse.json({
       availableWeekdays: normalizeAvailability(
-        snapshot.empty ? DEFAULT_WORKER_AVAILABILITY : Array.from(days)
+        configuredAvailability || DEFAULT_BOOKING_AVAILABILITY
       ),
     })
   } catch (error) {

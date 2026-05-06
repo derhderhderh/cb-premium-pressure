@@ -25,7 +25,6 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db, firebaseConfig } from "./firebase";
-import { normalizeAvailability } from "./availability";
 import type {
   Booking,
   User,
@@ -200,12 +199,6 @@ export async function updateUserStatus(id: string, active: boolean) {
   await updateDoc(doc(usersRef, id), { active });
 }
 
-export async function updateUserAvailability(id: string, availability: number[]) {
-  await updateDoc(doc(usersRef, id), {
-    availability: normalizeAvailability(availability),
-  });
-}
-
 export async function updateUser(
   id: string,
   data: Partial<Omit<User, "id" | "createdAt">>
@@ -249,5 +242,5 @@ export async function getSettings(): Promise<BusinessSettings | null> {
 }
 
 export async function updateSettings(data: Partial<BusinessSettings>) {
-  await updateDoc(doc(settingsRef, "global"), data);
+  await setDoc(doc(settingsRef, "global"), data, { merge: true });
 }

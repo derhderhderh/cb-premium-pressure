@@ -16,7 +16,7 @@ import { format, addDays, startOfDay } from "date-fns"
 import { cn, formatBookingQuantity, getQuantityLabel } from "@/lib/utils"
 import { ServiceType } from "@/lib/types"
 import { validateBookingForm } from "@/lib/validations"
-import { DEFAULT_WORKER_AVAILABILITY } from "@/lib/availability"
+import { DEFAULT_BOOKING_AVAILABILITY } from "@/lib/availability"
 
 interface BookingFormProps {
   selectedService: ServiceType
@@ -38,7 +38,7 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [date, setDate] = useState<Date>()
-  const [availableWeekdays, setAvailableWeekdays] = useState<number[]>(DEFAULT_WORKER_AVAILABILITY)
+  const [availableWeekdays, setAvailableWeekdays] = useState<number[]>(DEFAULT_BOOKING_AVAILABILITY)
   const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true)
   const [availabilityLoadFailed, setAvailabilityLoadFailed] = useState(false)
 
@@ -336,7 +336,7 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
                 )}
                 {!errors.preferredDate && (
                   <p className="text-xs text-muted-foreground">
-                    Only days with worker availability can be selected.
+                    Only admin-approved booking days can be selected.
                   </p>
                 )}
               </div>

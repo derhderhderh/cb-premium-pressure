@@ -46,7 +46,6 @@ export interface User {
   role: UserRole;
   createdAt: FirestoreDate;
   active: boolean;
-  availability?: number[];
 }
 
 export interface Pricing {
@@ -75,6 +74,7 @@ export interface BusinessSettings {
     sunday: string;
   };
   taxRate: number;
+  bookingAvailability?: number[];
 }
 
 export const SERVICE_LABELS: Record<ServiceType, string> = {

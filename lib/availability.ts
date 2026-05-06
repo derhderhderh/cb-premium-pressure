@@ -8,12 +8,12 @@ export const WEEKDAYS = [
   { value: 6, shortLabel: "Sat", label: "Saturday" },
 ];
 
-export const DEFAULT_WORKER_AVAILABILITY = [1, 2, 3, 4, 5, 6];
+export const DEFAULT_BOOKING_AVAILABILITY = [1, 2, 3, 4, 5, 6];
 
 export function normalizeAvailability(days?: number[]) {
   return Array.from(
     new Set(
-      (days || DEFAULT_WORKER_AVAILABILITY).filter(
+      (days || DEFAULT_BOOKING_AVAILABILITY).filter(
         (day) => Number.isInteger(day) && day >= 0 && day <= 6
       )
     )

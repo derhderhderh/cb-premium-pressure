@@ -1,17 +1,27 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { getSettings, updateSettings } from "@/lib/db"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Save, Building, Mail, MapPin, Clock, CheckCircle } from "lucide-react"
+import {
+  DEFAULT_BOOKING_AVAILABILITY,
+  formatAvailability,
+  normalizeAvailability,
+  WEEKDAYS,
+} from "@/lib/availability"
 
 export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [bookingAvailability, setBookingAvailability] = useState<number[]>(DEFAULT_BOOKING_AVAILABILITY)
 
   const [settings, setSettings] = useState({
     businessName: "CB Premium Pressure",
@@ -22,6 +32,22 @@ export default function AdminSettingsPage() {
     taxRate: 0,
   })
 
+  useEffect(() => {
+    async function loadBookingAvailability() {
+      try {
+        const savedSettings = await getSettings()
+        setBookingAvailability(
+          normalizeAvailability(savedSettings?.bookingAvailability)
+        )
+      } catch (err) {
+        console.error("Error loading booking availability:", err)
+        setError("Failed to load booking availability")
+      }
+    }
+
+    loadBookingAvailability()
+  }, [])
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -30,15 +56,34 @@ export default function AdminSettingsPage() {
     setSuccess(false)
   }
 
+  const handleToggleBookingDay = (day: number) => {
+    setBookingAvailability((current) => {
+      const normalized = normalizeAvailability(current)
+      return normalized.includes(day)
+        ? normalized.filter((availableDay) => availableDay !== day)
+        : normalizeAvailability([...normalized, day])
+    })
+    setSuccess(false)
+    setError(null)
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
+    setError(null)
 
-    // Simulate save
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const normalizedAvailability = normalizeAvailability(bookingAvailability)
+      await updateSettings({ bookingAvailability: normalizedAvailability })
 
-    setSaving(false)
-    setSuccess(true)
+      setBookingAvailability(normalizedAvailability)
+      setSuccess(true)
+    } catch (err) {
+      console.error("Error saving booking availability:", err)
+      setError("Failed to save booking availability")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -56,6 +101,12 @@ export default function AdminSettingsPage() {
           <AlertDescription className="text-success">
             Settings saved successfully!
           </AlertDescription>
+        </Alert>
+      )}
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
@@ -141,6 +192,38 @@ export default function AdminSettingsPage() {
                 rows={2}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Booking Availability */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Booking Availability
+            </CardTitle>
+            <CardDescription>
+              Choose which weekdays customers are allowed to book.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap gap-3">
+              {WEEKDAYS.map((day) => (
+                <label
+                  key={day.value}
+                  className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+                >
+                  <Checkbox
+                    checked={bookingAvailability.includes(day.value)}
+                    onCheckedChange={() => handleToggleBookingDay(day.value)}
+                  />
+                  {day.label}
+                </label>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Current bookable days: {formatAvailability(bookingAvailability)}
+            </p>
           </CardContent>
         </Card>
 

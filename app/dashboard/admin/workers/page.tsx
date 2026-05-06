@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { getAllUsers, createUser, updateUserAvailability, updateUserStatus } from "@/lib/db"
+import { getAllUsers, createUser, updateUserStatus } from "@/lib/db"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -38,12 +37,6 @@ import { Spinner } from "@/components/ui/spinner"
 import type { User, UserRole } from "@/lib/types"
 import { UserPlus, Mail, Shield, User as UserIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import {
-  DEFAULT_WORKER_AVAILABILITY,
-  formatAvailability,
-  normalizeAvailability,
-  WEEKDAYS,
-} from "@/lib/availability"
 
 export default function AdminWorkersPage() {
   const { user: currentUser } = useAuth()
@@ -52,7 +45,6 @@ export default function AdminWorkersPage() {
   const [error, setError] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [updatingAvailability, setUpdatingAvailability] = useState<string | null>(null)
 
   const [newTeamMember, setNewTeamMember] = useState({
     name: "",
@@ -86,8 +78,6 @@ export default function AdminWorkersPage() {
       const newUser = await createUser({
         ...newTeamMember,
         active: true,
-        availability:
-          newTeamMember.role === "worker" ? DEFAULT_WORKER_AVAILABILITY : [],
       })
       setUsers((prev) => [...prev, newUser])
       setNewTeamMember({ name: "", email: "", password: "", role: "worker" })
@@ -112,30 +102,6 @@ export default function AdminWorkersPage() {
       )
     } catch (err) {
       console.error("Error updating user status:", err)
-    }
-  }
-
-  const handleToggleAvailability = async (worker: User, day: number) => {
-    const currentAvailability = normalizeAvailability(worker.availability)
-    const nextAvailability = currentAvailability.includes(day)
-      ? currentAvailability.filter((availableDay) => availableDay !== day)
-      : [...currentAvailability, day]
-
-    setUpdatingAvailability(worker.id)
-
-    try {
-      const normalized = normalizeAvailability(nextAvailability)
-      await updateUserAvailability(worker.id, normalized)
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === worker.id ? { ...u, availability: normalized } : u
-        )
-      )
-    } catch (err) {
-      console.error("Error updating worker availability:", err)
-      setError("Failed to update worker availability")
-    } finally {
-      setUpdatingAvailability(null)
     }
   }
 
@@ -265,7 +231,6 @@ export default function AdminWorkersPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Contact</TableHead>
-                <TableHead>Availability</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Active</TableHead>
               </TableRow>
@@ -273,7 +238,7 @@ export default function AdminWorkersPage() {
             <TableBody>
               {workers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     No workers added yet.
                   </TableCell>
                 </TableRow>
@@ -285,28 +250,6 @@ export default function AdminWorkersPage() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Mail className="h-3 w-3" />
                         {worker.email}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          {WEEKDAYS.map((day) => (
-                            <label
-                              key={day.value}
-                              className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                            >
-                              <Checkbox
-                                checked={normalizeAvailability(worker.availability).includes(day.value)}
-                                disabled={updatingAvailability === worker.id}
-                                onCheckedChange={() => handleToggleAvailability(worker, day.value)}
-                              />
-                              {day.shortLabel}
-                            </label>
-                          ))}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {formatAvailability(worker.availability)}
-                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
