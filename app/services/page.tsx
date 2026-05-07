@@ -5,11 +5,11 @@ import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Check, Home, Car, Trees, Building2, Fence, Footprints, Trash2 } from "lucide-react"
+import { ArrowRight, Check, Car, Trees, Building2, Footprints, Trash2 } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Our Services | CB Premium Pressure",
-  description: "Professional pressure washing services for driveways, house exteriors, decks, patios, fences, and commercial properties.",
+  description: "Professional pressure washing services for driveways, decks, patios, sidewalks, trashcans, and commercial properties.",
 }
 
 const services = [
@@ -29,21 +29,6 @@ const services = [
     popular: true,
   },
   {
-    id: "house",
-    icon: Home,
-    title: "House Exterior",
-    description: "Boost your home&apos;s curb appeal with our safe and effective house washing service. We clean all types of siding including vinyl, brick, stucco, and wood.",
-    startingPrice: "$150",
-    pricePerSqFt: "$0.25",
-    features: [
-      "Soft wash technique for delicate surfaces",
-      "Safe for all siding types",
-      "Window cleaning included",
-      "Gutter brightening available",
-    ],
-    popular: false,
-  },
-  {
     id: "deck",
     icon: Trees,
     title: "Deck & Patio Cleaning",
@@ -55,21 +40,6 @@ const services = [
       "Mold and mildew removal",
       "Stain preparation available",
       "Sealing services offered",
-    ],
-    popular: false,
-  },
-  {
-    id: "fence",
-    icon: Fence,
-    title: "Fence Cleaning",
-    description: "Bring your fence back to life. Whether it&apos;s wood, vinyl, or metal, we&apos;ll restore it to look like new without damaging the material.",
-    startingPrice: "$80",
-    pricePerSqFt: "$0.18",
-    features: [
-      "All fence materials",
-      "Gentle pressure settings",
-      "Stain and seal prep",
-      "Both sides cleaned",
     ],
     popular: false,
   },

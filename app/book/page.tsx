@@ -6,16 +6,19 @@ import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { QuoteCalculator } from "@/components/booking/quote-calculator"
 import { BookingForm } from "@/components/booking/booking-form"
-import { ServiceType } from "@/lib/types"
+import { SERVICE_LABELS, ServiceType } from "@/lib/types"
 import { calculateQuote } from "@/lib/pricing"
 
 function BookPageContent() {
   const searchParams = useSearchParams()
-  const serviceParam = searchParams.get("service") as ServiceType | null
+  const serviceParam = searchParams.get("service")
+  const selectedInitialService = (
+    serviceParam && serviceParam in SERVICE_LABELS ? serviceParam : "driveway"
+  ) as ServiceType
 
   const [quoteData, setQuoteData] = useState({
-    service: (serviceParam || "driveway") as ServiceType,
-    sqft: serviceParam === "trashcan" ? 1 : 500,
+    service: selectedInitialService,
+    sqft: selectedInitialService === "trashcan" ? 1 : 500,
     price: 0,
   })
 
@@ -54,7 +57,7 @@ function BookPageContent() {
               {/* Quote Calculator */}
               <div className="lg:sticky lg:top-24 lg:self-start">
                 <QuoteCalculator
-                  initialService={serviceParam || undefined}
+                  initialService={selectedInitialService}
                   onQuoteCalculated={handleQuoteCalculated}
                 />
               </div>

@@ -15,6 +15,7 @@ import {
   LogOut,
   ClipboardList,
   KeyRound,
+  MessageCircle,
   Menu,
   X,
 } from "lucide-react"
@@ -24,6 +25,7 @@ const adminNavItems = [
   { href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/worker", label: "My Jobs", icon: ClipboardList },
   { href: "/dashboard/admin/bookings", label: "Bookings", icon: Calendar },
+  { href: "/dashboard/admin/chats", label: "Support Chats", icon: MessageCircle },
   { href: "/dashboard/admin/workers", label: "Workers", icon: Users },
   { href: "/dashboard/admin/pricing", label: "Pricing", icon: DollarSign },
   { href: "/dashboard/admin/settings", label: "Settings", icon: Settings },

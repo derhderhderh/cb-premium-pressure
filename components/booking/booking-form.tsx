@@ -174,7 +174,7 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
           </div>
           <h3 className="mb-2 text-2xl font-bold text-foreground">Booking Request Submitted!</h3>
           <p className="mb-6 max-w-md text-muted-foreground">
-            Thank you for choosing CB Premium Pressure. We&apos;ve received your booking request and will confirm your appointment shortly.
+            Thank you for choosing CB Premium Pressure. We have received your booking request and will confirm your appointment shortly.
           </p>
           
           {/* Worker contact notice - per user requirement */}

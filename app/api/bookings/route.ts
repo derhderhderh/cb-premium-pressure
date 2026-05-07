@@ -11,7 +11,7 @@ import {
   serverTimestamp,
   where,
 } from "firebase/firestore/lite"
-import { Booking, ServiceType } from "@/lib/types"
+import { Booking, SERVICE_LABELS, ServiceType } from "@/lib/types"
 import { sendBookingConfirmation, sendNewBookingAdminEmail } from "@/lib/email"
 import { DEFAULT_BOOKING_AVAILABILITY, normalizeAvailability } from "@/lib/availability"
 
@@ -115,6 +115,13 @@ export async function POST(request: NextRequest) {
     if (!customerName || !email || !phone || !address || !serviceType || !squareFootage) {
       return NextResponse.json(
         { error: "Missing required fields" },
+        { status: 400 }
+      )
+    }
+
+    if (!(serviceType in SERVICE_LABELS)) {
+      return NextResponse.json(
+        { error: "That service is no longer available for booking." },
         { status: 400 }
       )
     }

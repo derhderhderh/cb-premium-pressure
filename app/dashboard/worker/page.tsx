@@ -165,7 +165,7 @@ export default function WorkerDashboardPage() {
                 </EmptyMedia>
                 <EmptyTitle>No pending jobs</EmptyTitle>
                 <EmptyDescription>
-                  You don&apos;t have any pending job requests right now.
+                  You do not have any pending job requests right now.
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

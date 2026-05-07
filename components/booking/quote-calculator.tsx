@@ -6,17 +6,15 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Home, Car, Trees, Building2, Fence, Footprints, Trash2, Calculator } from "lucide-react"
+import { Car, Trees, Building2, Footprints, Trash2, Calculator } from "lucide-react"
 import { ServiceType } from "@/lib/types"
 import { calculateQuote } from "@/lib/pricing"
 import { cn, getQuantityLabel, getQuantityUnit } from "@/lib/utils"
 
 const serviceOptions = [
   { value: "driveway" as ServiceType, label: "Driveway", icon: Car },
-  { value: "house_exterior" as ServiceType, label: "House Exterior", icon: Home },
   { value: "deck" as ServiceType, label: "Deck", icon: Trees },
   { value: "patio" as ServiceType, label: "Patio", icon: Trees },
-  { value: "fence" as ServiceType, label: "Fence", icon: Fence },
   { value: "sidewalk" as ServiceType, label: "Sidewalk", icon: Footprints },
   { value: "trashcan" as ServiceType, label: "Trashcan", icon: Trash2 },
   { value: "commercial" as ServiceType, label: "Commercial", icon: Building2 },

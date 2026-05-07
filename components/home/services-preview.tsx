@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRight, Home, Car, Trees, Building2, Fence, Footprints, Trash2 } from "lucide-react"
+import { ArrowRight, Car, Trees, Building2, Footprints, Trash2 } from "lucide-react"
 
 const services = [
   {
@@ -10,13 +10,6 @@ const services = [
     description: "Remove oil stains, dirt, and grime to restore your driveway to its original condition.",
     href: "/services#driveway",
     startingPrice: "$75",
-  },
-  {
-    icon: Home,
-    title: "House Exterior",
-    description: "Safely clean siding, brick, and stucco to boost your home&apos;s curb appeal.",
-    href: "/services#house",
-    startingPrice: "$150",
   },
   {
     icon: Trees,
@@ -31,13 +24,6 @@ const services = [
     description: "Keep your business looking professional with regular pressure washing maintenance.",
     href: "/services#commercial",
     startingPrice: "$200",
-  },
-  {
-    icon: Fence,
-    title: "Fence Cleaning",
-    description: "Restore wood, vinyl, or metal fences to their original beauty.",
-    href: "/services#fence",
-    startingPrice: "$80",
   },
   {
     icon: Footprints,

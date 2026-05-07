@@ -12,7 +12,7 @@ const testimonials = [
   {
     name: "James Thompson",
     location: "Plano, TX",
-    content: "We&apos;ve been using CB Premium for our commercial property for a few months now. Consistent quality every time. Our storefront has never looked better.",
+    content: "We have been using CB Premium for our commercial property for a few months now. Consistent quality every time. Our storefront has never looked better.",
     rating: 5,
   },
   {
@@ -32,7 +32,7 @@ export function Testimonials() {
             What Our Customers Say
           </h2>
           <p className="text-lg text-muted-foreground">
-            Don&apos;t just take our word for it. Here&apos;s what our satisfied customers have to say.
+            Do not just take our word for it. Here is what our satisfied customers have to say.
           </p>
         </div>
 

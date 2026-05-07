@@ -14,13 +14,15 @@ import { Save, RefreshCw, DollarSign, CheckCircle } from "lucide-react"
 
 const serviceLabels: Record<ServiceType, string> = {
   driveway: "Driveway Cleaning",
-  house_exterior: "House Exterior",
   deck: "Deck Cleaning",
   patio: "Patio Cleaning",
-  fence: "Fence Cleaning",
   sidewalk: "Sidewalk Cleaning",
   trashcan: "Trashcan Cleaning",
   commercial: "Commercial Services",
+}
+
+function isActiveServiceType(serviceType: string): serviceType is ServiceType {
+  return serviceType in serviceLabels
 }
 
 export default function AdminPricingPage() {
@@ -46,7 +48,7 @@ export default function AdminPricingPage() {
           }))
           setPricing(defaultPricingData)
         } else {
-          setPricing(data)
+          setPricing(data.filter((item) => isActiveServiceType(item.serviceType)))
         }
       } catch (err) {
         console.error("Error fetching pricing:", err)
@@ -238,7 +240,7 @@ export default function AdminPricingPage() {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Formula: Base (${p.basePrice}) + ({p.serviceType === "trashcan" ? "Cans" : "Area"} × ${p.pricePerSqFt}/{p.serviceType === "trashcan" ? "can" : "sq ft"}), minimum ${p.minPrice}
+                Formula: Base (${p.basePrice}) + ({p.serviceType === "trashcan" ? "Cans" : "Area"} x ${p.pricePerSqFt}/{p.serviceType === "trashcan" ? "can" : "sq ft"}), minimum ${p.minPrice}
               </p>
             </CardContent>
           </Card>

@@ -4,8 +4,8 @@ import { Droplets, Mail, MapPin } from "lucide-react"
 const footerLinks = {
   services: [
     { name: "Driveway Cleaning", href: "/services#driveway" },
-    { name: "House Exterior", href: "/services#house" },
     { name: "Deck & Patio", href: "/services#deck" },
+    { name: "Sidewalks & Walkways", href: "/services#sidewalk" },
     { name: "Trashcan Cleaning", href: "/services#trashcan" },
     { name: "Commercial", href: "/services#commercial" },
   ],

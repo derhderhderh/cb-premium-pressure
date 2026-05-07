@@ -4,7 +4,7 @@ const features = [
   {
     icon: Shield,
     title: "Fully Insured",
-    description: "We&apos;re fully licensed and insured, giving you peace of mind on every job.",
+    description: "We are fully licensed and insured, giving you peace of mind on every job.",
   },
   {
     icon: Clock,
@@ -14,7 +14,7 @@ const features = [
   {
     icon: ThumbsUp,
     title: "Satisfaction Guaranteed",
-    description: "Not happy with the results? We&apos;ll come back and make it right, free of charge.",
+    description: "Not happy with the results? We will come back and make it right, free of charge.",
   },
   {
     icon: DollarSign,
@@ -29,7 +29,7 @@ const features = [
   {
     icon: Leaf,
     title: "Eco-Friendly",
-    description: "We use environmentally safe cleaning solutions that won&apos;t harm your landscaping.",
+    description: "We use environmentally safe cleaning solutions that will not harm your landscaping.",
   },
 ]
 
@@ -42,7 +42,7 @@ export function WhyChooseUs() {
             Why Choose CB Premium Pressure?
           </h2>
           <p className="text-lg text-muted-foreground">
-            We&apos;re committed to delivering exceptional results and outstanding customer service on every project.
+            We are committed to delivering exceptional results and outstanding customer service on every project.
           </p>
         </div>
 

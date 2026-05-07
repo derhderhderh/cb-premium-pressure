@@ -4,10 +4,8 @@ export type FirestoreDate = Timestamp | Date;
 
 export type ServiceType =
   | "driveway"
-  | "house_exterior"
   | "deck"
   | "patio"
-  | "fence"
   | "sidewalk"
   | "trashcan"
   | "commercial";
@@ -77,12 +75,40 @@ export interface BusinessSettings {
   bookingAvailability?: number[];
 }
 
+export type SupportChatStatus = "open" | "claimed" | "closed";
+export type SupportChatSource = "website" | "email";
+export type SupportMessageSender = "customer" | "admin" | "ai" | "system";
+
+export interface SupportChat {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  subject: string;
+  source: SupportChatSource;
+  status: SupportChatStatus;
+  claimedBy: string | null;
+  allowedAdminIds: string[];
+  adminNotificationSent: boolean;
+  needsAdmin: boolean;
+  createdAt: FirestoreDate;
+  updatedAt: FirestoreDate;
+}
+
+export interface SupportMessage {
+  id: string;
+  chatId: string;
+  sender: SupportMessageSender;
+  senderId: string | null;
+  senderName: string;
+  body: string;
+  createdAt: FirestoreDate;
+}
+
 export const SERVICE_LABELS: Record<ServiceType, string> = {
   driveway: "Driveway Cleaning",
-  house_exterior: "House Exterior",
   deck: "Deck Cleaning",
   patio: "Patio Cleaning",
-  fence: "Fence Cleaning",
   sidewalk: "Sidewalk Cleaning",
   trashcan: "Trashcan Cleaning",
   commercial: "Commercial Property",
@@ -101,10 +127,8 @@ export const DEFAULT_PRICING: Record<
   { basePrice: number; pricePerSqFt: number; minPrice: number }
 > = {
   driveway: { basePrice: 60, pricePerSqFt: 0.12, minPrice: 80 },
-  house_exterior: { basePrice: 125, pricePerSqFt: 0.20, minPrice: 175 },
   deck: { basePrice: 80, pricePerSqFt: 0.15, minPrice: 100 },
   patio: { basePrice: 50, pricePerSqFt: 0.10, minPrice: 65 },
-  fence: { basePrice: 65, pricePerSqFt: 0.14, minPrice: 85 },
   sidewalk: { basePrice: 35, pricePerSqFt: 0.08, minPrice: 50 },
   trashcan: { basePrice: 0, pricePerSqFt: 20, minPrice: 20 },
   commercial: { basePrice: 175, pricePerSqFt: 0.15, minPrice: 250 },

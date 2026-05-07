@@ -3,7 +3,7 @@ import { Booking } from "./types"
 import { format } from "date-fns"
 import { formatBookingQuantity, getQuantityLabel, toDate } from "./utils"
 
-const FROM_EMAIL = "CB Premium Pressure <noreply@cbpremiumpressure.org>"
+export const FROM_EMAIL = "CB Premium Pressure <noreply@cbpremiumpressure.org>"
 
 function getResend() {
   if (!process.env.RESEND_API_KEY) {
@@ -290,4 +290,82 @@ export async function sendStatusUpdateEmail(booking: Booking, newStatus: string)
     console.error("Failed to send status update email:", error)
     throw error
   }
+}
+
+export async function sendSupportChatLinkEmail({
+  to,
+  chatUrl,
+  subject,
+}: {
+  to: string
+  chatUrl: string
+  subject: string
+}) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #1e40af;">CB Premium Pressure</h1>
+        <div style="background: #f8fafc; border-radius: 12px; padding: 24px;">
+          <h2 style="margin-top: 0;">We opened a support chat for you</h2>
+          <p>Thanks for reaching out. You can continue the conversation with our team using the secure chat link below.</p>
+          <p style="margin: 24px 0;">
+            <a href="${chatUrl}" style="display: inline-block; background: #1e40af; color: #ffffff; text-decoration: none; font-weight: 600; padding: 12px 18px; border-radius: 8px;">Open Support Chat</a>
+          </p>
+          <p style="font-size: 14px; color: #64748b;">Request: ${subject}</p>
+        </div>
+      </body>
+    </html>
+  `
+
+  const { data, error } = await getResend().emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: "Your Support Chat - CB Premium Pressure",
+    html,
+  })
+
+  if (error) throw error
+  return data
+}
+
+export async function sendNewSupportChatAdminEmail({
+  recipients,
+  chatUrl,
+  subject,
+  customerLabel,
+}: {
+  recipients: string[]
+  chatUrl: string
+  subject: string
+  customerLabel: string
+}) {
+  if (recipients.length === 0) return
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #1e40af;">CB Premium Pressure</h1>
+        <div style="background: #f8fafc; border-radius: 12px; padding: 24px;">
+          <h2 style="margin-top: 0;">New support request</h2>
+          <p>${customerLabel} started a support chat.</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <p style="margin: 24px 0;">
+            <a href="${chatUrl}" style="display: inline-block; background: #1e40af; color: #ffffff; text-decoration: none; font-weight: 600; padding: 12px 18px; border-radius: 8px;">Open Admin Chat</a>
+          </p>
+        </div>
+      </body>
+    </html>
+  `
+
+  const { data, error } = await getResend().emails.send({
+    from: FROM_EMAIL,
+    to: recipients,
+    subject: "New Support Request - CB Premium Pressure",
+    html,
+  })
+
+  if (error) throw error
+  return data
 }

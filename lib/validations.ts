@@ -10,10 +10,8 @@ export const bookingFormSchema = z.object({
   address: z.string().min(5, "Please enter your full address"),
   serviceType: z.enum([
     "driveway",
-    "house_exterior",
     "deck",
     "patio",
-    "fence",
     "sidewalk",
     "trashcan",
     "commercial",
