@@ -8,20 +8,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Save, Building, Mail, MapPin, Clock, CheckCircle } from "lucide-react"
-import {
-  DEFAULT_BOOKING_AVAILABILITY,
-  formatAvailability,
-  normalizeAvailability,
-  WEEKDAYS,
-} from "@/lib/availability"
+import { normalizeAvailableDates } from "@/lib/availability"
 
 export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [bookingAvailability, setBookingAvailability] = useState<number[]>(DEFAULT_BOOKING_AVAILABILITY)
+  const [availableBookingDates, setAvailableBookingDates] = useState<string[]>([])
+  const [newBookingDate, setNewBookingDate] = useState("")
 
   const [settings, setSettings] = useState({
     businessName: "CB Premium Pressure",
@@ -36,8 +31,8 @@ export default function AdminSettingsPage() {
     async function loadBookingAvailability() {
       try {
         const savedSettings = await getSettings()
-        setBookingAvailability(
-          normalizeAvailability(savedSettings?.bookingAvailability)
+        setAvailableBookingDates(
+          normalizeAvailableDates(savedSettings?.availableBookingDates)
         )
       } catch (err) {
         console.error("Error loading booking availability:", err)
@@ -56,13 +51,18 @@ export default function AdminSettingsPage() {
     setSuccess(false)
   }
 
-  const handleToggleBookingDay = (day: number) => {
-    setBookingAvailability((current) => {
-      const normalized = normalizeAvailability(current)
-      return normalized.includes(day)
-        ? normalized.filter((availableDay) => availableDay !== day)
-        : normalizeAvailability([...normalized, day])
-    })
+  const handleAddBookingDate = () => {
+    if (!newBookingDate) return
+    setAvailableBookingDates((current) =>
+      normalizeAvailableDates([...current, newBookingDate])
+    )
+    setNewBookingDate("")
+    setSuccess(false)
+    setError(null)
+  }
+
+  const handleRemoveBookingDate = (date: string) => {
+    setAvailableBookingDates((current) => current.filter((item) => item !== date))
     setSuccess(false)
     setError(null)
   }
@@ -73,10 +73,10 @@ export default function AdminSettingsPage() {
     setError(null)
 
     try {
-      const normalizedAvailability = normalizeAvailability(bookingAvailability)
-      await updateSettings({ bookingAvailability: normalizedAvailability })
+      const normalizedAvailability = normalizeAvailableDates(availableBookingDates)
+      await updateSettings({ availableBookingDates: normalizedAvailability })
 
-      setBookingAvailability(normalizedAvailability)
+      setAvailableBookingDates(normalizedAvailability)
       setSuccess(true)
     } catch (err) {
       console.error("Error saving booking availability:", err)
@@ -203,27 +203,42 @@ export default function AdminSettingsPage() {
               Booking Availability
             </CardTitle>
             <CardDescription>
-              Choose which weekdays customers are allowed to book.
+              Choose the exact dates customers are allowed to book.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex flex-wrap gap-3">
-              {WEEKDAYS.map((day) => (
-                <label
-                  key={day.value}
-                  className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
-                >
-                  <Checkbox
-                    checked={bookingAvailability.includes(day.value)}
-                    onCheckedChange={() => handleToggleBookingDay(day.value)}
-                  />
-                  {day.label}
-                </label>
-              ))}
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Input
+                type="date"
+                value={newBookingDate}
+                onChange={(event) => setNewBookingDate(event.target.value)}
+                className="max-w-xs"
+              />
+              <Button type="button" variant="outline" onClick={handleAddBookingDate}>
+                Add Date
+              </Button>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Current bookable days: {formatAvailability(bookingAvailability)}
-            </p>
+            {availableBookingDates.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No dates are currently open for customer booking.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {availableBookingDates.map((date) => (
+                  <div key={date} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    <span>{date}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveBookingDate(date)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

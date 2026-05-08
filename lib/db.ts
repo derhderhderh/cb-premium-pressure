@@ -34,6 +34,7 @@ import type {
   BookingStatus,
   UserRole,
 } from "./types";
+import { DEFAULT_PRICING } from "./types";
 
 // Collection references
 const bookingsRef = collection(db, "bookings");
@@ -111,6 +112,13 @@ export async function getAllBookings(): Promise<Booking[]> {
 export async function updateBookingStatus(id: string, status: BookingStatus) {
   await updateDoc(doc(bookingsRef, id), {
     status,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function updateBookingPrice(id: string, estimatedPrice: number) {
+  await updateDoc(doc(bookingsRef, id), {
+    estimatedPrice,
     updatedAt: Timestamp.now(),
   });
 }
@@ -209,6 +217,33 @@ export async function updateUser(
 // Pricing
 export async function getPricing(): Promise<Pricing[]> {
   const snapshot = await getDocs(pricingRef);
+  if (snapshot.empty) {
+    const now = Timestamp.now();
+    await Promise.all(
+      Object.entries(DEFAULT_PRICING).map(([serviceType, pricing]) =>
+        setDoc(doc(pricingRef, serviceType), {
+          serviceType,
+          description: serviceType,
+          ...pricing,
+          updatedAt: now,
+          updatedBy: "system",
+        })
+      )
+    );
+
+    return Object.entries(DEFAULT_PRICING).map(
+      ([serviceType, pricing]) =>
+        ({
+          id: serviceType,
+          serviceType,
+          description: serviceType,
+          ...pricing,
+          updatedAt: now,
+          updatedBy: "system",
+        }) as Pricing
+    );
+  }
+
   return snapshot.docs.map(
     (doc) => ({ id: doc.id, ...doc.data() }) as Pricing
   );
@@ -237,7 +272,27 @@ export async function updatePricing(
 // Business Settings
 export async function getSettings(): Promise<BusinessSettings | null> {
   const docSnap = await getDoc(doc(settingsRef, "global"));
-  if (!docSnap.exists()) return null;
+  if (!docSnap.exists()) {
+    const defaultSettings: BusinessSettings = {
+      id: "global",
+      businessName: "CB Premium Pressure",
+      email: "contact@cbpremiumpressure.org",
+      address: "Serving Allen, Texas",
+      businessHours: {
+        monday: "7:00 AM - 7:00 PM",
+        tuesday: "7:00 AM - 7:00 PM",
+        wednesday: "7:00 AM - 7:00 PM",
+        thursday: "7:00 AM - 7:00 PM",
+        friday: "7:00 AM - 7:00 PM",
+        saturday: "7:00 AM - 7:00 PM",
+        sunday: "Closed",
+      },
+      taxRate: 0,
+      availableBookingDates: [],
+    };
+    await setDoc(doc(settingsRef, "global"), defaultSettings);
+    return defaultSettings;
+  }
   return { id: "global", ...docSnap.data() } as BusinessSettings;
 }
 

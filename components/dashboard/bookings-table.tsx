@@ -25,6 +25,7 @@ import { Booking, User } from "@/lib/types"
 import { format } from "date-fns"
 import { Hand, MoreHorizontal, Search } from "lucide-react"
 import { cn, toDate } from "@/lib/utils"
+import { formatBookingServices } from "@/lib/booking-services"
 
 interface BookingsTableProps {
   bookings: Booking[]
@@ -32,6 +33,7 @@ interface BookingsTableProps {
   currentUserId?: string
   onStatusUpdate: (bookingId: string, newStatus: Booking["status"]) => Promise<void>
   onClaimBooking?: (bookingId: string) => Promise<void>
+  onPriceUpdate?: (booking: Booking, newPrice: number) => Promise<void>
 }
 
 const statusConfig = {
@@ -48,9 +50,11 @@ export function BookingsTable({
   currentUserId,
   onStatusUpdate,
   onClaimBooking,
+  onPriceUpdate,
 }: BookingsTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [priceEdits, setPriceEdits] = useState<Record<string, string>>({})
 
   const filteredBookings = bookings.filter((booking) => {
     const matchesSearch =
@@ -126,12 +130,42 @@ export function BookingsTable({
                       </div>
                     </TableCell>
                     <TableCell className="capitalize">
-                      {booking.serviceType.replace("_", " ")}
+                      {formatBookingServices(booking)}
                     </TableCell>
                     <TableCell>
                       {format(toDate(booking.preferredDate), "MMM d, yyyy")}
                     </TableCell>
-                    <TableCell>${booking.estimatedPrice.toFixed(2)}</TableCell>
+                    <TableCell>
+                      {onPriceUpdate ? (
+                        <div className="flex min-w-[150px] items-center gap-2">
+                          <Input
+                            type="number"
+                            value={priceEdits[booking.id] ?? booking.estimatedPrice.toString()}
+                            onChange={(event) =>
+                              setPriceEdits((prev) => ({
+                                ...prev,
+                                [booking.id]: event.target.value,
+                              }))
+                            }
+                            className="h-8 w-24"
+                            min={0}
+                            step={1}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              onPriceUpdate(booking, Number(priceEdits[booking.id] ?? booking.estimatedPrice))
+                            }
+                          >
+                            Send
+                          </Button>
+                        </div>
+                      ) : (
+                        `$${booking.estimatedPrice.toFixed(2)}`
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge className={cn("font-medium", status.className)}>
                         {status.label}

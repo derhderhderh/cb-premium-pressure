@@ -1,5 +1,6 @@
-import { Booking, SERVICE_LABELS, STATUS_LABELS } from "./types";
-import { formatBookingQuantity, toDate } from "./utils";
+import { Booking, STATUS_LABELS } from "./types";
+import { toDate } from "./utils";
+import { formatBookingServiceDetails, formatBookingServices } from "./booking-services";
 
 const websiteFacts = [
   {
@@ -73,10 +74,9 @@ export function getSupportAiReply(message: string, matchingBookings: Booking[]) 
     }
 
     const booking = matchingBookings[0];
-    const serviceLabel = SERVICE_LABELS[booking.serviceType];
     const date = toDate(booking.preferredDate).toLocaleDateString();
     return {
-      body: `I found your ${serviceLabel} booking request for ${date}. Its current status is ${STATUS_LABELS[booking.status]}. ${formatBookingQuantity(booking.serviceType, booking.squareFootage)} is listed on the request.`,
+      body: `I found your ${formatBookingServices(booking)} booking request for ${date}. Its current status is ${STATUS_LABELS[booking.status]}. ${formatBookingServiceDetails(booking)} is listed on the request.`,
       needsAdmin: false,
     };
   }

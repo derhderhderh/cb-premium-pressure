@@ -26,6 +26,7 @@ export interface Booking {
   phone: string;
   address: string;
   serviceType: ServiceType;
+  services?: BookingServiceItem[];
   squareFootage: number;
   preferredDate: FirestoreDate;
   preferredTime: string;
@@ -35,6 +36,12 @@ export interface Booking {
   notes: string;
   createdAt: FirestoreDate;
   updatedAt: FirestoreDate;
+}
+
+export interface BookingServiceItem {
+  serviceType: ServiceType;
+  quantity: number;
+  estimatedPrice: number;
 }
 
 export interface User {
@@ -72,7 +79,7 @@ export interface BusinessSettings {
     sunday: string;
   };
   taxRate: number;
-  bookingAvailability?: number[];
+  availableBookingDates?: string[];
 }
 
 export type SupportChatStatus = "open" | "claimed" | "closed";

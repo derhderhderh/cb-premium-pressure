@@ -13,9 +13,11 @@ import {
   addAiReplyIfNeeded,
   addSupportMessage,
   getChatMessages,
+  getSiteUrl,
   notifyAdminsOfSupportChat,
   supportDb,
 } from "../_shared"
+import { sendSupportChatLinkEmail } from "@/lib/email"
 import { SupportChat } from "@/lib/types"
 
 export const runtime = "nodejs"
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const message = String(body.message || "").trim()
 
-    if (!message) {
+    if (!message && !body.customerEmail) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 })
     }
 
@@ -76,15 +78,27 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date(),
     } as SupportChat
 
-    await addSupportMessage({
-      chatId: chatDoc.id,
-      sender: "customer",
-      senderName: chat.customerName || "Customer",
-      body: message,
-    })
+    if (message) {
+      await addSupportMessage({
+        chatId: chatDoc.id,
+        sender: body.createdByAdmin ? "system" : "customer",
+        senderName: body.createdByAdmin ? "System" : chat.customerName || "Customer",
+        body: body.createdByAdmin ? `An admin opened this chat. ${message}` : message,
+      })
+    }
 
-    const aiReply = await addAiReplyIfNeeded(chat, message)
+    const aiReply = message && !body.createdByAdmin
+      ? await addAiReplyIfNeeded(chat, message)
+      : { needsAdmin: true }
     await notifyAdminsOfSupportChat(chat)
+
+    if (body.sendCustomerLink && chat.customerEmail) {
+      await sendSupportChatLinkEmail({
+        to: chat.customerEmail,
+        chatUrl: `${getSiteUrl()}/chat/${chatDoc.id}`,
+        subject: chat.subject || "Support chat",
+      })
+    }
 
     await updateDoc(doc(supportDb, "supportChats", chatDoc.id), {
       needsAdmin: aiReply.needsAdmin,

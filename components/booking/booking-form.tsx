@@ -14,13 +14,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { CalendarIcon, CheckCircle, Send, MessageCircle, Smartphone } from "lucide-react"
 import { format, addDays, startOfDay } from "date-fns"
 import { cn, formatBookingQuantity, getQuantityLabel } from "@/lib/utils"
-import { ServiceType } from "@/lib/types"
+import { BookingServiceItem, SERVICE_LABELS } from "@/lib/types"
 import { validateBookingForm } from "@/lib/validations"
-import { DEFAULT_BOOKING_AVAILABILITY } from "@/lib/availability"
+import { formatDateKey } from "@/lib/availability"
 
 interface BookingFormProps {
-  selectedService: ServiceType
-  squareFootage: number
+  services: BookingServiceItem[]
   estimatedPrice: number
 }
 
@@ -32,13 +31,13 @@ const timeSlots = [
   "4:00 PM - 6:00 PM",
 ]
 
-export function BookingForm({ selectedService, squareFootage, estimatedPrice }: BookingFormProps) {
+export function BookingForm({ services, estimatedPrice }: BookingFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [date, setDate] = useState<Date>()
-  const [availableWeekdays, setAvailableWeekdays] = useState<number[]>(DEFAULT_BOOKING_AVAILABILITY)
+  const [availableDates, setAvailableDates] = useState<string[]>([])
   const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true)
   const [availabilityLoadFailed, setAvailabilityLoadFailed] = useState(false)
 
@@ -56,12 +55,12 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
       try {
         const response = await fetch("/api/availability")
         if (!response.ok) {
-          throw new Error("Failed to load available booking days.")
+          throw new Error("Failed to load available booking dates.")
         }
 
         const data = await response.json()
-        if (Array.isArray(data.availableWeekdays)) {
-          setAvailableWeekdays(data.availableWeekdays)
+        if (Array.isArray(data.availableDates)) {
+          setAvailableDates(data.availableDates)
         }
         setAvailabilityLoadFailed(false)
       } catch (error) {
@@ -69,7 +68,7 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
         setAvailabilityLoadFailed(true)
         setErrors((prev) => ({
           ...prev,
-          preferredDate: "Available booking days could not be loaded. Please try again.",
+          preferredDate: "Available booking dates could not be loaded. Please try again.",
         }))
       } finally {
         setIsAvailabilityLoading(false)
@@ -83,7 +82,7 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
     return (
       !availabilityLoadFailed &&
       bookingDate >= startOfDay(addDays(new Date(), 1)) &&
-      availableWeekdays.includes(bookingDate.getDay())
+      availableDates.includes(formatDateKey(bookingDate))
     )
   }
 
@@ -108,8 +107,8 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
     // Validate form
     const validation = validateBookingForm({
       ...formData,
-      serviceType: selectedService,
-      squareFootage,
+      serviceType: services[0]?.serviceType,
+      squareFootage: services[0]?.quantity,
       preferredDate: date,
     })
 
@@ -137,8 +136,9 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
         signal: controller.signal,
         body: JSON.stringify({
           ...formData,
-          serviceType: selectedService,
-          squareFootage,
+          serviceType: services[0]?.serviceType,
+          squareFootage: services[0]?.quantity,
+          services,
           estimatedPrice,
           preferredDate: date?.toISOString(),
         }),
@@ -195,13 +195,15 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Service:</dt>
                 <dd className="font-medium capitalize text-foreground">
-                  {selectedService.replace("_", " ")}
+                  {services.map((service) => SERVICE_LABELS[service.serviceType]).join(", ")}
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">{getQuantityLabel(selectedService)}:</dt>
+                <dt className="text-muted-foreground">Details:</dt>
                 <dd className="font-medium text-foreground">
-                  {formatBookingQuantity(selectedService, squareFootage)}
+                  {services.map((service) =>
+                    `${getQuantityLabel(service.serviceType)}: ${formatBookingQuantity(service.serviceType, service.quantity)}`
+                  ).join("; ")}
                 </dd>
               </div>
               <div className="flex justify-between">
@@ -336,7 +338,7 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
                 )}
                 {!errors.preferredDate && (
                   <p className="text-xs text-muted-foreground">
-                    Only admin-approved booking days can be selected.
+                    Only admin-approved booking dates can be selected.
                   </p>
                 )}
               </div>
@@ -381,13 +383,15 @@ export function BookingForm({ selectedService, squareFootage, estimatedPrice }: 
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Service:</dt>
                 <dd className="font-medium capitalize text-foreground">
-                  {selectedService.replace("_", " ")}
+                  {services.map((service) => SERVICE_LABELS[service.serviceType]).join(", ")}
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">{getQuantityLabel(selectedService)}:</dt>
+                <dt className="text-muted-foreground">Details:</dt>
                 <dd className="font-medium text-foreground">
-                  {formatBookingQuantity(selectedService, squareFootage)}
+                  {services.map((service) =>
+                    `${getQuantityLabel(service.serviceType)}: ${formatBookingQuantity(service.serviceType, service.quantity)}`
+                  ).join("; ")}
                 </dd>
               </div>
               <div className="flex justify-between border-t border-border pt-2">

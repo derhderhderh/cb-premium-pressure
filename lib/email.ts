@@ -1,7 +1,8 @@
 import { Resend } from "resend"
 import { Booking } from "./types"
 import { format } from "date-fns"
-import { formatBookingQuantity, getQuantityLabel, toDate } from "./utils"
+import { toDate } from "./utils"
+import { formatBookingServiceDetails, formatBookingServices } from "./booking-services"
 
 export const FROM_EMAIL = "CB Premium Pressure <noreply@cbpremiumpressure.org>"
 
@@ -50,11 +51,11 @@ export async function sendBookingConfirmation(booking: Booking) {
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 8px 0; color: #64748b;">Service:</td>
-              <td style="padding: 8px 0; text-align: right; font-weight: 500; text-transform: capitalize;">${booking.serviceType.replace("_", " ")}</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500; text-transform: capitalize;">${formatBookingServices(booking)}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #64748b;">${getQuantityLabel(booking.serviceType)}:</td>
-              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${formatBookingQuantity(booking.serviceType, booking.squareFootage)}</td>
+              <td style="padding: 8px 0; color: #64748b;">Details:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${formatBookingServiceDetails(booking)}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #64748b;">Preferred Date:</td>
@@ -160,11 +161,11 @@ export async function sendNewBookingAdminEmail(
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #64748b;">Service:</td>
-              <td style="padding: 8px 0; text-align: right; font-weight: 500; text-transform: capitalize;">${booking.serviceType.replace("_", " ")}</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500; text-transform: capitalize;">${formatBookingServices(booking)}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; color: #64748b;">${getQuantityLabel(booking.serviceType)}:</td>
-              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${formatBookingQuantity(booking.serviceType, booking.squareFootage)}</td>
+              <td style="padding: 8px 0; color: #64748b;">Details:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 500;">${formatBookingServiceDetails(booking)}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #64748b;">Preferred Date:</td>
@@ -259,7 +260,7 @@ export async function sendStatusUpdateEmail(booking: Booking, newStatus: string)
         
         <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin-bottom: 20px;">
           <h3 style="color: #1e293b; margin-top: 0;">Service Details</h3>
-          <p style="margin: 5px 0;"><strong>Service:</strong> ${booking.serviceType.replace("_", " ")}</p>
+          <p style="margin: 5px 0;"><strong>Service:</strong> ${formatBookingServices(booking)}</p>
           <p style="margin: 5px 0;"><strong>Date:</strong> ${format(preferredDate, "MMMM d, yyyy")}</p>
           <p style="margin: 5px 0;"><strong>Address:</strong> ${booking.address}</p>
         </div>
@@ -369,3 +370,34 @@ export async function sendNewSupportChatAdminEmail({
   if (error) throw error
   return data
 }
+
+export async function sendPriceUpdateEmail(booking: Booking, newPrice: number) {
+  const preferredDate = toDate(booking.preferredDate)
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #1e40af;">CB Premium Pressure</h1>
+        <div style="background: #f8fafc; border-radius: 12px; padding: 24px;">
+          <h2 style="margin-top: 0;">Your booking estimate was updated</h2>
+          <p>Hi ${booking.customerName},</p>
+          <p>Your updated estimate is <strong>$${newPrice.toFixed(2)}</strong>.</p>
+          <p><strong>Service:</strong> ${formatBookingServices(booking)}</p>
+          <p><strong>Date:</strong> ${format(preferredDate, "MMMM d, yyyy")}</p>
+          <p style="font-size: 14px; color: #64748b;">Final pricing may still depend on condition and accessibility.</p>
+        </div>
+      </body>
+    </html>
+  `
+
+  const { data, error } = await getResend().emails.send({
+    from: FROM_EMAIL,
+    to: booking.email,
+    subject: "Updated Booking Estimate - CB Premium Pressure",
+    html,
+  })
+
+  if (error) throw error
+  return data
+}
+

@@ -13,7 +13,8 @@ import {
 } from "firebase/firestore/lite"
 import { Booking, SERVICE_LABELS, ServiceType } from "@/lib/types"
 import { sendBookingConfirmation, sendNewBookingAdminEmail } from "@/lib/email"
-import { DEFAULT_BOOKING_AVAILABILITY, normalizeAvailability } from "@/lib/availability"
+import { formatDateKey, normalizeAvailableDates } from "@/lib/availability"
+import { normalizeBookingServices } from "@/lib/booking-services"
 
 export const runtime = "nodejs"
 
@@ -79,18 +80,16 @@ async function getAdminNotificationEmails() {
   return Array.from(emails)
 }
 
-async function getAvailableBookingWeekdays() {
+async function getAvailableBookingDates() {
   const settingsDoc = await withTimeout(
     getDoc(doc(db, "settings", "global")),
     5000,
     "Timed out while loading booking availability"
   )
-  const configuredAvailability = settingsDoc.exists()
-    ? (settingsDoc.data().bookingAvailability as number[] | undefined)
-    : undefined
-
-  return normalizeAvailability(
-    configuredAvailability || DEFAULT_BOOKING_AVAILABILITY
+  return normalizeAvailableDates(
+    settingsDoc.exists()
+      ? (settingsDoc.data().availableBookingDates as string[] | undefined)
+      : undefined
   )
 }
 
@@ -106,6 +105,7 @@ export async function POST(request: NextRequest) {
       serviceType,
       squareFootage,
       estimatedPrice,
+      services,
       preferredDate,
       preferredTime,
       notes,
@@ -134,13 +134,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const availableWeekdays = await getAvailableBookingWeekdays()
-    if (!availableWeekdays.includes(requestedDate.getDay())) {
+    const availableDates = await getAvailableBookingDates()
+    if (!availableDates.includes(formatDateKey(requestedDate))) {
       return NextResponse.json(
-        { error: "That date is not available for booking. Please choose an available day." },
+        { error: "That date is not available for booking. Please choose an available date." },
         { status: 400 }
       )
     }
+
+    const requestedServices = normalizeBookingServices(services)
+    const bookingServices =
+      requestedServices.length > 0
+        ? requestedServices
+        : [
+            {
+              serviceType: serviceType as ServiceType,
+              quantity: Number(squareFootage),
+              estimatedPrice: Number(estimatedPrice),
+            },
+          ]
 
     // Create booking document
     const bookingData: Omit<Booking, "id"> = {
@@ -149,7 +161,8 @@ export async function POST(request: NextRequest) {
       phone,
       address,
       serviceType: serviceType as ServiceType,
-      squareFootage: Number(squareFootage),
+      services: bookingServices,
+      squareFootage: bookingServices[0]?.quantity || Number(squareFootage),
       estimatedPrice: Number(estimatedPrice),
       preferredDate: requestedDate,
       preferredTime: preferredTime || "",

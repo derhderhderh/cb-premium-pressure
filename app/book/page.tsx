@@ -6,7 +6,7 @@ import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { QuoteCalculator } from "@/components/booking/quote-calculator"
 import { BookingForm } from "@/components/booking/booking-form"
-import { SERVICE_LABELS, ServiceType } from "@/lib/types"
+import { BookingServiceItem, SERVICE_LABELS, ServiceType } from "@/lib/types"
 import { calculateQuote } from "@/lib/pricing"
 
 function BookPageContent() {
@@ -17,18 +17,29 @@ function BookPageContent() {
   ) as ServiceType
 
   const [quoteData, setQuoteData] = useState({
-    service: selectedInitialService,
-    sqft: selectedInitialService === "trashcan" ? 1 : 500,
+    services: [
+      {
+        serviceType: selectedInitialService,
+        quantity: selectedInitialService === "trashcan" ? 1 : 500,
+        estimatedPrice: 0,
+      },
+    ] as BookingServiceItem[],
     price: 0,
   })
 
   // Calculate initial price
   useEffect(() => {
-    const initialPrice = calculateQuote(quoteData.service, quoteData.sqft)
-    setQuoteData((prev) => ({ ...prev, price: initialPrice }))
+    const initialServices = quoteData.services.map((service) => ({
+      ...service,
+      estimatedPrice: calculateQuote(service.serviceType, service.quantity),
+    }))
+    setQuoteData({
+      services: initialServices,
+      price: initialServices.reduce((sum, service) => sum + service.estimatedPrice, 0),
+    })
   }, [])
 
-  const handleQuoteCalculated = (data: { service: ServiceType; sqft: number; price: number }) => {
+  const handleQuoteCalculated = (data: { services: BookingServiceItem[]; price: number }) => {
     setQuoteData(data)
   }
 
@@ -64,8 +75,7 @@ function BookPageContent() {
 
               {/* Booking Form */}
               <BookingForm
-                selectedService={quoteData.service}
-                squareFootage={quoteData.sqft}
+                services={quoteData.services}
                 estimatedPrice={quoteData.price}
               />
             </div>

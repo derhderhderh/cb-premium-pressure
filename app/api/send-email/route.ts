@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { sendBookingConfirmation, sendStatusUpdateEmail } from "@/lib/email"
+import { sendBookingConfirmation, sendPriceUpdateEmail, sendStatusUpdateEmail } from "@/lib/email"
 import { Booking } from "@/lib/types"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { type, booking, newStatus } = body
+    const { type, booking, newStatus, newPrice } = body
 
     if (!booking) {
       return NextResponse.json(
@@ -26,6 +26,15 @@ export async function POST(request: NextRequest) {
           )
         }
         await sendStatusUpdateEmail(booking as Booking, newStatus)
+        break
+      case "price_update":
+        if (typeof newPrice !== "number") {
+          return NextResponse.json(
+            { error: "New price is required for price updates" },
+            { status: 400 }
+          )
+        }
+        await sendPriceUpdateEmail(booking as Booking, newPrice)
         break
       default:
         return NextResponse.json(

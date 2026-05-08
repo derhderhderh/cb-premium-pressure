@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Car, Trees, Building2, Footprints, Trash2, Calculator } from "lucide-react"
-import { ServiceType } from "@/lib/types"
+import { BookingServiceItem, ServiceType } from "@/lib/types"
 import { calculateQuote } from "@/lib/pricing"
 import { cn, getQuantityLabel, getQuantityUnit } from "@/lib/utils"
 
@@ -22,12 +23,21 @@ const serviceOptions = [
 
 interface QuoteCalculatorProps {
   initialService?: ServiceType
-  onQuoteCalculated?: (quote: { service: ServiceType; sqft: number; price: number }) => void
+  onQuoteCalculated?: (quote: { services: BookingServiceItem[]; price: number }) => void
 }
 
 export function QuoteCalculator({ initialService, onQuoteCalculated }: QuoteCalculatorProps) {
   const [selectedService, setSelectedService] = useState<ServiceType>(initialService || "driveway")
   const [squareFootage, setSquareFootage] = useState(initialService === "trashcan" ? 1 : 500)
+  const [selectedServices, setSelectedServices] = useState<ServiceType[]>([initialService || "driveway"])
+  const [quantities, setQuantities] = useState<Record<ServiceType, number>>({
+    driveway: 500,
+    deck: 500,
+    patio: 500,
+    sidewalk: 500,
+    trashcan: 1,
+    commercial: 500,
+  })
   const isTrashcan = selectedService === "trashcan"
   const minQuantity = isTrashcan ? 1 : 100
   const maxQuantity = isTrashcan ? 12 : 5000
@@ -35,27 +45,59 @@ export function QuoteCalculator({ initialService, onQuoteCalculated }: QuoteCalc
   const step = isTrashcan ? 1 : 50
 
   const estimatedPrice = useMemo(() => {
-    return calculateQuote(selectedService, squareFootage)
-  }, [selectedService, squareFootage])
+    return selectedServices.reduce(
+      (sum, service) => sum + calculateQuote(service, quantities[service]),
+      0
+    )
+  }, [selectedServices, quantities])
+
+  const emitQuote = (services: ServiceType[], nextQuantities: Record<ServiceType, number>) => {
+    const quoteServices = services.map((service) => ({
+      serviceType: service,
+      quantity: nextQuantities[service],
+      estimatedPrice: calculateQuote(service, nextQuantities[service]),
+    }))
+    onQuoteCalculated?.({
+      services: quoteServices,
+      price: quoteServices.reduce((sum, service) => sum + service.estimatedPrice, 0),
+    })
+  }
 
   const handleServiceChange = (value: string) => {
     const service = value as ServiceType
-    const nextQuantity = service === "trashcan" ? 1 : 500
     setSelectedService(service)
-    setSquareFootage(nextQuantity)
-    onQuoteCalculated?.({ service, sqft: nextQuantity, price: calculateQuote(service, nextQuantity) })
+    setSquareFootage(quantities[service])
   }
+
+  useEffect(() => {
+    emitQuote(selectedServices, quantities)
+  }, [])
 
   const handleSquareFootageChange = (value: number[]) => {
     const sqft = value[0]
     setSquareFootage(sqft)
-    onQuoteCalculated?.({ service: selectedService, sqft, price: calculateQuote(selectedService, sqft) })
+    const nextQuantities = { ...quantities, [selectedService]: sqft }
+    setQuantities(nextQuantities)
+    emitQuote(selectedServices, nextQuantities)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Math.max(minQuantity, Math.min(inputMax, parseInt(e.target.value) || minQuantity))
     setSquareFootage(value)
-    onQuoteCalculated?.({ service: selectedService, sqft: value, price: calculateQuote(selectedService, value) })
+    const nextQuantities = { ...quantities, [selectedService]: value }
+    setQuantities(nextQuantities)
+    emitQuote(selectedServices, nextQuantities)
+  }
+
+  const handleServiceToggle = (service: ServiceType) => {
+    const nextServices = selectedServices.includes(service)
+      ? selectedServices.filter((item) => item !== service)
+      : [...selectedServices, service]
+    const fallbackServices = nextServices.length > 0 ? nextServices : [service]
+    setSelectedServices(fallbackServices)
+    setSelectedService(service)
+    setSquareFootage(quantities[service])
+    emitQuote(fallbackServices, quantities)
   }
 
   return (
@@ -85,13 +127,19 @@ export function QuoteCalculator({ initialService, onQuoteCalculated }: QuoteCalc
                 key={option.value}
                 htmlFor={option.value}
                 className={cn(
-                  "flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all hover:bg-secondary/50",
+                  "relative flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all hover:bg-secondary/50",
                   selectedService === option.value
                     ? "border-primary bg-primary/5"
                     : "border-border"
                 )}
               >
                 <RadioGroupItem value={option.value} id={option.value} className="sr-only" />
+                <Checkbox
+                  checked={selectedServices.includes(option.value)}
+                  onCheckedChange={() => handleServiceToggle(option.value)}
+                  className="absolute left-2 top-2"
+                  onClick={(event) => event.stopPropagation()}
+                />
                 <option.icon
                   className={cn(
                     "h-6 w-6",

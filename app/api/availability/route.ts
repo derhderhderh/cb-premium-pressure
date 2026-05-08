@@ -5,7 +5,7 @@ import {
   getDoc,
   getFirestore,
 } from "firebase/firestore/lite"
-import { DEFAULT_BOOKING_AVAILABILITY, normalizeAvailability } from "@/lib/availability"
+import { normalizeAvailableDates } from "@/lib/availability"
 
 export const runtime = "nodejs"
 
@@ -24,13 +24,12 @@ const db = getFirestore(app)
 export async function GET() {
   try {
     const settingsDoc = await getDoc(doc(db, "settings", "global"))
-    const configuredAvailability = settingsDoc.exists()
-      ? (settingsDoc.data().bookingAvailability as number[] | undefined)
-      : undefined
 
     return NextResponse.json({
-      availableWeekdays: normalizeAvailability(
-        configuredAvailability || DEFAULT_BOOKING_AVAILABILITY
+      availableDates: normalizeAvailableDates(
+        (settingsDoc.exists()
+          ? (settingsDoc.data().availableBookingDates as string[] | undefined)
+          : undefined) || []
       ),
     })
   } catch (error) {

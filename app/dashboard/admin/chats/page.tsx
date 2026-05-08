@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context"
 import { getAllUsers } from "@/lib/db"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -21,6 +22,8 @@ export default function AdminChatsPage() {
   const [messages, setMessages] = useState<SupportMessage[]>([])
   const [admins, setAdmins] = useState<User[]>([])
   const [reply, setReply] = useState("")
+  const [newChatEmail, setNewChatEmail] = useState("")
+  const [newChatSubject, setNewChatSubject] = useState("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isSending, setIsSending] = useState(false)
@@ -158,6 +161,38 @@ export default function AdminChatsPage() {
     }
   }
 
+  const forceOpenChat = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!newChatEmail.trim()) return
+
+    try {
+      const response = await fetch("/api/support/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerEmail: newChatEmail,
+          subject: newChatSubject || "Support chat",
+          message: "A support chat was opened by an admin.",
+          createdByAdmin: true,
+          sendCustomerLink: true,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error || "Failed to open chat")
+      }
+
+      const data = await response.json()
+      setNewChatEmail("")
+      setNewChatSubject("")
+      await loadChats()
+      setSelectedChatId(data.chat.id)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to open chat")
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -180,6 +215,32 @@ export default function AdminChatsPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Open Chat for Customer</CardTitle>
+          <CardDescription>
+            Enter a customer email to create a chat and send them the chat link.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={forceOpenChat} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+            <Input
+              type="email"
+              placeholder="customer@example.com"
+              value={newChatEmail}
+              onChange={(event) => setNewChatEmail(event.target.value)}
+              required
+            />
+            <Input
+              placeholder="Subject"
+              value={newChatSubject}
+              onChange={(event) => setNewChatSubject(event.target.value)}
+            />
+            <Button type="submit">Create Chat</Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <Card>

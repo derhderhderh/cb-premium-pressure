@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { claimBooking, getAllBookings, getAllUsers, updateBookingStatus } from "@/lib/db"
+import { claimBooking, getAllBookings, getAllUsers, updateBookingPrice, updateBookingStatus } from "@/lib/db"
 import { BookingsTable } from "@/components/dashboard/bookings-table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
@@ -65,6 +65,27 @@ export default function AdminBookingsPage() {
     }
   }
 
+  const handlePriceUpdate = async (booking: Booking, newPrice: number) => {
+    if (!Number.isFinite(newPrice) || newPrice < 0) return
+
+    await updateBookingPrice(booking.id, newPrice)
+    const updatedBooking = { ...booking, estimatedPrice: newPrice, updatedAt: new Date() }
+
+    await fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "price_update",
+        booking: updatedBooking,
+        newPrice,
+      }),
+    })
+
+    setBookings((prev) =>
+      prev.map((item) => (item.id === booking.id ? updatedBooking : item))
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -104,6 +125,7 @@ export default function AdminBookingsPage() {
             currentUserId={user?.uid}
             onStatusUpdate={handleStatusUpdate}
             onClaimBooking={handleClaimBooking}
+            onPriceUpdate={handlePriceUpdate}
           />
         </CardContent>
       </Card>
